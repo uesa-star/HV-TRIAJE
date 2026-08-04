@@ -1,0 +1,1343 @@
+<!DOCTYPE html>
+<html lang="es" class="h-full bg-slate-100">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>SGH Hospital Ventanilla - Sistema Inteligente de Triaje</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Plus Jakarta Sans', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            50: '#eff6ff',
+                            100: '#dbeafe',
+                            200: '#bfdbfe',
+                            500: '#3b82f6',
+                            600: '#2563eb',
+                            700: '#1d4ed8',
+                            800: '#1e40af',
+                            900: '#1e3a8a',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: #f1f5f9;
+            color: #0f172a;
+            overflow: hidden;
+        }
+
+        /* Custom subtle scrollbar */
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #f1f5f9;
+            border-radius: 8px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 8px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+
+        .view-section {
+            display: none;
+            width: 100%;
+        }
+        .view-section.active {
+            display: block;
+            animation: fadeIn 0.3s ease-in-out forwards;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(6px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .active-nav {
+            background-color: #eff6ff;
+            color: #1d4ed8;
+            border-right: 4px solid #1d4ed8;
+            font-weight: 700;
+        }
+
+        .filter-input {
+            border: 1px solid #cbd5e1;
+            transition: all 0.2s ease;
+        }
+        .filter-input:focus {
+            border-color: #2563eb;
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+            outline: none;
+        }
+
+        .table-row-hover {
+            transition: background-color 0.15s ease;
+        }
+        .table-row-hover:hover {
+            background-color: #f8fafc;
+        }
+
+        .pulse-red {
+            animation: pulseRed 2s infinite;
+        }
+        @keyframes pulseRed {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
+    </style>
+</head>
+<body class="h-screen w-screen flex flex-col md:flex-row overflow-hidden bg-slate-100">
+
+    <!-- SIDEBAR DE NAVEGACIÓN -->
+    <aside id="sidebar" class="w-full md:w-64 bg-white border-b md:border-b-0 md:border-r border-slate-200 flex flex-col shrink-0 transition-all duration-300 z-30">
+        
+        <!-- Header del Sidebar / Marca -->
+        <div class="h-16 md:h-20 flex items-center justify-between px-4 md:px-5 border-b border-slate-100 shrink-0">
+            <div class="flex items-center gap-3 overflow-hidden">
+                <div class="w-10 h-10 bg-brand-700 text-white rounded-2xl flex items-center justify-center font-black text-xl shadow-md shadow-brand-700/30 shrink-0">
+                    🏥
+                </div>
+                <div id="sidebarBrand" class="flex flex-col transition-opacity duration-200">
+                    <span class="font-extrabold text-slate-800 text-base leading-tight tracking-tight whitespace-nowrap">HOSPITAL</span>
+                    <span class="font-black text-brand-700 text-xs tracking-widest whitespace-nowrap">VENTANILLA</span>
+                </div>
+            </div>
+            <button id="toggleBtn" onclick="toggleSidebar()" title="Colapsar / Expandir Menú" class="p-2 hover:bg-slate-100 rounded-xl text-slate-500 text-lg transition-colors">
+                ☰
+            </button>
+        </div>
+
+        <!-- Menú de Opciones -->
+        <nav id="sidebarNav" class="flex-1 p-3 space-y-1.5 overflow-y-auto custom-scrollbar">
+            <p class="sidebar-label text-[10px] font-black text-slate-400 uppercase tracking-widest px-3 py-2">Módulos de Atención</p>
+            
+            <button onclick="switchView('dashboard')" id="nav-dashboard" title="Dashboard Real-Time" class="nav-item w-full flex items-center px-3.5 py-3 rounded-2xl transition-all text-slate-600 hover:bg-slate-50 font-semibold text-xs gap-3">
+                <span class="text-lg shrink-0">📊</span>
+                <span class="nav-label whitespace-nowrap">Dashboard Real-Time</span>
+            </button>
+
+            <button onclick="switchView('reporte')" id="nav-reporte" title="Reporte de Triaje" class="nav-item w-full active-nav flex items-center px-3.5 py-3 rounded-2xl transition-all text-xs gap-3">
+                <span class="text-lg shrink-0">📋</span>
+                <span class="nav-label whitespace-nowrap">Reporte de Triaje</span>
+            </button>
+
+            <button onclick="switchView('estadisticas')" id="nav-estadisticas" title="Analítica Operativa" class="nav-item w-full flex items-center px-3.5 py-3 rounded-2xl transition-all text-slate-600 hover:bg-slate-50 font-semibold text-xs gap-3">
+                <span class="text-lg shrink-0">📈</span>
+                <span class="nav-label whitespace-nowrap">Analítica Operativa</span>
+            </button>
+
+            <div class="py-2">
+                <div class="h-px bg-slate-100 w-full"></div>
+            </div>
+
+            <button onclick="openNewTriageModal()" title="Admitir Triaje" class="nav-item w-full bg-brand-700 hover:bg-brand-800 text-white font-extrabold p-3 rounded-2xl shadow-md shadow-brand-700/20 transition-all flex items-center justify-center gap-2 text-xs uppercase tracking-wider">
+                <span class="shrink-0">➕</span>
+                <span class="nav-label whitespace-nowrap">Admitir Triaje</span>
+            </button>
+        </nav>
+
+        <!-- Estado del Servidor & Usuario -->
+        <div id="sidebarUser" class="p-4 border-t border-slate-100 bg-slate-50/70 shrink-0">
+            <div class="flex items-center gap-3 overflow-hidden">
+                <div class="w-9 h-9 rounded-full bg-brand-100 border-2 border-brand-500 flex items-center justify-center text-brand-800 font-extrabold text-xs shrink-0" title="Dr. Guardia Triaje">
+                    DR
+                </div>
+                <div class="sidebar-label flex flex-col min-w-0">
+                    <p class="text-xs font-bold text-slate-800 truncate">Dr. Guardia Triaje</p>
+                    <button onclick="openNodeConfigModal()" class="text-[10px] text-emerald-600 hover:text-brand-700 font-bold flex items-center gap-1 transition-colors text-left" title="Click para Configurar Conexión a Servidor HIS">
+                        <span id="nodeStatusPing" class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                        <span id="nodeIpLabel">Nodo: 172.18.26.18</span>
+                        <span class="text-[9px] bg-emerald-100 text-emerald-800 px-1 rounded font-extrabold ml-0.5">⚙️</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- CONTENIDO PRINCIPAL -->
+    <main class="flex-1 flex flex-col min-w-0 h-full overflow-hidden">
+        
+        <!-- Header Superior Sticky -->
+        <header class="h-16 md:h-20 bg-white border-b border-slate-200 flex items-center justify-between px-4 md:px-8 shrink-0 z-20">
+            <div class="flex items-center gap-3">
+                <button onclick="toggleSidebar()" class="md:hidden bg-slate-100 hover:bg-slate-200 text-slate-700 p-2.5 rounded-xl font-bold text-xs" title="Abrir/Cerrar Menú">
+                    ☰
+                </button>
+                <button onclick="openNewTriageModal()" class="md:hidden bg-brand-700 text-white p-2.5 rounded-xl font-bold text-xs">
+                    ➕ Admitir
+                </button>
+                <div>
+                    <h1 id="viewTitle" class="text-base md:text-xl font-extrabold text-slate-900 tracking-tight">Reporte de Triaje General</h1>
+                    <div class="flex items-center gap-2 mt-0.5">
+                        <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                        <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Módulo Activo - Emergencias SGH</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- KPIs Rápidos de Turno -->
+            <div class="flex items-center gap-3 md:gap-6">
+                <div class="hidden sm:flex items-center gap-3 bg-slate-50 border border-slate-200 px-3.5 py-2 rounded-2xl">
+                    <span class="text-xl">⏱️</span>
+                    <div>
+                        <p class="text-[9px] font-extrabold text-slate-400 uppercase">Espera Promedio</p>
+                        <p class="text-xs font-extrabold text-slate-800">14 min</p>
+                    </div>
+                </div>
+
+                <div class="hidden sm:flex items-center gap-3 bg-red-50 border border-red-100 px-3.5 py-2 rounded-2xl">
+                    <span class="text-xl">🚨</span>
+                    <div>
+                        <p class="text-[9px] font-extrabold text-red-400 uppercase">Casos Críticos</p>
+                        <p id="statCritical" class="text-xs font-extrabold text-red-700">2 hoy</p>
+                    </div>
+                </div>
+
+                <div class="text-right pl-2 border-l border-slate-200">
+                    <p class="text-[10px] font-extrabold text-slate-400 uppercase">Fecha Sistema</p>
+                    <p id="currentDateHeader" class="text-xs md:text-sm font-extrabold text-slate-800 font-mono">--.--.----</p>
+                </div>
+            </div>
+        </header>
+
+        <!-- ÁREA PRINCIPAL CON SCROLL INTERNO CONTROLADO -->
+        <div class="flex-1 overflow-y-auto p-3 md:p-6 custom-scrollbar">
+            
+            <!-- ================= VISTA 1: DASHBOARD ================= -->
+            <section id="view-dashboard" class="view-section max-w-7xl mx-auto space-y-6">
+                <!-- Tarjetas KPI -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div class="bg-white p-5 rounded-3xl border border-slate-200 shadow-sm flex items-center justify-between">
+                        <div>
+                            <p class="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Total Atendidos</p>
+                            <h3 id="statTotal" class="text-2xl font-black text-slate-800 mt-1">0</h3>
+                            <span class="text-[10px] text-emerald-600 font-extrabold bg-emerald-50 px-2 py-0.5 rounded-md mt-2 inline-block">↑ +12% Guardia</span>
+                        </div>
+                        <div class="w-12 h-12 rounded-2xl bg-brand-50 text-brand-700 flex items-center justify-center text-2xl font-bold">👥</div>
+                    </div>
+
+                    <div class="bg-white p-5 rounded-3xl border border-slate-200 shadow-sm flex items-center justify-between">
+                        <div>
+                            <p class="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Prioridad I (Críticos)</p>
+                            <h3 class="text-2xl font-black text-red-600 mt-1">2</h3>
+                            <span class="text-[10px] text-red-600 font-extrabold bg-red-50 px-2 py-0.5 rounded-md mt-2 inline-block">Atención Inmediata</span>
+                        </div>
+                        <div class="w-12 h-12 rounded-2xl bg-red-50 text-red-600 flex items-center justify-center text-2xl font-bold">🚑</div>
+                    </div>
+
+                    <div class="bg-white p-5 rounded-3xl border border-slate-200 shadow-sm flex items-center justify-between">
+                        <div>
+                            <p class="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Prioridad II (Urgente)</p>
+                            <h3 class="text-2xl font-black text-orange-500 mt-1">4</h3>
+                            <span class="text-[10px] text-orange-600 font-extrabold bg-orange-50 px-2 py-0.5 rounded-md mt-2 inline-block">Espera &lt; 15 min</span>
+                        </div>
+                        <div class="w-12 h-12 rounded-2xl bg-orange-50 text-orange-600 flex items-center justify-center text-2xl font-bold">⚡</div>
+                    </div>
+
+                    <div class="bg-white p-5 rounded-3xl border border-slate-200 shadow-sm flex items-center justify-between">
+                        <div>
+                            <p class="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Disponibilidad Shockroom</p>
+                            <h3 class="text-2xl font-black text-emerald-600 mt-1">2 / 3</h3>
+                            <span class="text-[10px] text-emerald-600 font-extrabold bg-emerald-50 px-2 py-0.5 rounded-md mt-2 inline-block">Camas Libres</span>
+                        </div>
+                        <div class="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-2xl font-bold">🛏️</div>
+                    </div>
+                </div>
+
+                <!-- Gráficos del Dashboard -->
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div class="lg:col-span-2 bg-white p-6 rounded-3xl border border-slate-200 shadow-sm">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="font-extrabold text-slate-800 text-sm flex items-center gap-2">
+                                <span>📈</span> Flujo de Pacientes Ingresados por Hora
+                            </h3>
+                            <span class="text-xs text-slate-400 font-bold">Últimas 24h</span>
+                        </div>
+                        <div class="relative w-full h-64">
+                            <canvas id="flowChart"></canvas>
+                        </div>
+                    </div>
+
+                    <div class="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm flex flex-col justify-between">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="font-extrabold text-slate-800 text-sm">Distribución por Prioridad ESI</h3>
+                            <span class="text-xs text-slate-400 font-bold">Categorización</span>
+                        </div>
+                        <div class="relative w-full h-56 flex items-center justify-center">
+                            <canvas id="priorityChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ================= VISTA 2: REPORTE DE TRIAJE ================= -->
+            <section id="view-reporte" class="view-section active max-w-7xl mx-auto space-y-4">
+                
+                <div class="bg-white rounded-3xl border border-slate-200 shadow-xl shadow-slate-200/40 overflow-hidden">
+                    
+                    <!-- Filtros de Búsqueda -->
+                    <div class="p-4 md:p-6 border-b border-slate-100 bg-slate-50/60">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-3 items-end">
+                            
+                            <div class="lg:col-span-3 grid grid-cols-2 gap-2">
+                                <div>
+                                    <label class="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block mb-1">F. Inicial</label>
+                                    <input type="date" id="dateStart" onchange="executeFilter()" class="filter-input w-full px-3 py-2 bg-white rounded-xl text-xs font-semibold text-slate-700">
+                                </div>
+                                <div>
+                                    <label class="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block mb-1">F. Final</label>
+                                    <input type="date" id="dateEnd" onchange="executeFilter()" class="filter-input w-full px-3 py-2 bg-white rounded-xl text-xs font-semibold text-slate-700">
+                                </div>
+                            </div>
+
+                            <div class="lg:col-span-4">
+                                <label class="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block mb-1">Paciente, DNI o N° Historia Clínica</label>
+                                <div class="relative">
+                                    <input type="text" id="textSearch" oninput="executeFilter()" placeholder="Buscar en tiempo real por Apellidos, DNI o HC..." class="filter-input w-full pl-9 pr-3 py-2 bg-white rounded-xl text-xs font-semibold text-slate-700">
+                                    <span class="absolute left-3 top-2 text-slate-400 text-xs">🔍</span>
+                                </div>
+                            </div>
+
+                            <div class="lg:col-span-2">
+                                <label class="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block mb-1">Nivel Urgencia</label>
+                                <select id="priorityFilter" onchange="executeFilter()" class="filter-input w-full px-3 py-2 bg-white rounded-xl text-xs font-semibold text-slate-700">
+                                    <option value="TODOS">Todos los Niveles</option>
+                                    <option value="critico">Prioridad I (Crítico)</option>
+                                    <option value="alto">Prioridad II (Alto)</option>
+                                    <option value="moderado">Prioridad III (Moderado)</option>
+                                    <option value="estable">Prioridad IV-V (Estable)</option>
+                                </select>
+                            </div>
+
+                            <div class="lg:col-span-3 flex gap-2">
+                                <button onclick="executeFilter()" class="flex-1 bg-brand-700 hover:bg-brand-800 text-white font-extrabold px-3 py-2 rounded-xl text-xs shadow-md transition-all uppercase tracking-wider">
+                                    Buscar
+                                </button>
+                                <button onclick="resetFilters()" title="Resetear" class="bg-slate-200 hover:bg-slate-300 text-slate-700 px-3 py-2 rounded-xl text-xs font-extrabold transition-all">
+                                    ↺
+                                </button>
+                                <button onclick="exportToCSV()" title="Exportar CSV" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3.5 py-2 rounded-xl text-xs font-extrabold transition-all">
+                                    📥 CSV
+                                </button>
+                            </div>
+
+                        </div>
+                    </div>
+
+                    <!-- TABLA PRINCIPAL RESPOSIVA Y PROTEGIDA CONTRA DESBORDE -->
+                    <div class="w-full overflow-x-auto custom-scrollbar">
+                        <table class="w-full min-w-[900px] text-left border-collapse">
+                            <thead class="bg-slate-100/80 text-[10px] font-extrabold uppercase tracking-widest text-slate-500 border-b border-slate-200">
+                                <tr>
+                                    <th class="px-4 py-3.5 w-28">Ingreso</th>
+                                    <th class="px-4 py-3.5 w-64">Paciente & Identidad</th>
+                                    <th class="px-3 py-3.5 text-center w-28">Biometría</th>
+                                    <th class="px-4 py-3.5 text-center">Signos Vitales y Adicionales (Con Alertas)</th>
+                                    <th class="px-3 py-3.5 text-center w-32">Prioridad</th>
+                                    <th class="px-3 py-3.5 text-center w-24">Acción</th>
+                                </tr>
+                            </thead>
+                            <tbody id="dataTableBody" class="divide-y divide-slate-100 text-xs">
+                                <!-- Filas dinámicas JS -->
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Estado Vacío -->
+                    <div id="emptyMsg" class="hidden py-16 text-center flex flex-col items-center justify-center">
+                        <div class="w-14 h-14 bg-slate-100 rounded-full flex items-center justify-center text-2xl mb-2 text-slate-400">🔍</div>
+                        <h4 class="text-slate-800 font-bold text-sm">No se encontraron registros de triaje</h4>
+                        <p class="text-slate-400 text-xs mt-1">Modifique los filtros de fecha o búsqueda.</p>
+                    </div>
+
+                    <!-- CONTROLES DE PAGINACIÓN MANUAL Y CANTIDAD DE REGISTROS -->
+                    <div class="p-4 border-t border-slate-200 bg-slate-50/80 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs font-semibold">
+                        
+                        <!-- Selector de registros por página -->
+                        <div class="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-start">
+                            <div class="flex items-center gap-2">
+                                <span class="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Mostrar:</span>
+                                <select id="pageSizeSelect" onchange="changePageSize(this.value)" class="filter-input px-3 py-1.5 bg-white rounded-xl text-xs font-extrabold text-slate-700 cursor-pointer shadow-xs">
+                                    <option value="10" selected>10 casos</option>
+                                    <option value="50">50 casos</option>
+                                    <option value="100">100 casos</option>
+                                    <option value="ALL">TOTAL</option>
+                                </select>
+                            </div>
+                            <span id="paginationInfo" class="text-[11px] font-bold text-slate-500 bg-white px-3 py-1.5 rounded-xl border border-slate-200 shadow-xs">
+                                Mostrando 0 - 0 de 0 casos
+                            </span>
+                        </div>
+
+                        <!-- Botones de Navegación Paginada -->
+                        <div id="paginationControls" class="flex items-center gap-1.5 overflow-x-auto max-w-full pb-1 sm:pb-0">
+                            <!-- JS inserta los botones dinámicamente -->
+                        </div>
+                    </div>
+
+                </div>
+            </section>
+
+            <!-- ================= VISTA 3: ESTADÍSTICAS ================= -->
+            <section id="view-estadisticas" class="view-section max-w-7xl mx-auto">
+                <div class="bg-white rounded-3xl border border-slate-200 p-6 shadow-sm">
+                    <h3 class="font-extrabold text-slate-800 text-sm mb-4">Resumen Estadístico de Guardia</h3>
+                    <p class="text-xs text-slate-500 mb-6">Métricas de tiempo de respuesta, volumen por especialidad y demanda del servicio de emergencias.</p>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                            <p class="text-xs font-bold text-slate-700 mb-2">Porcentaje de Pacientes Atendidos &lt; 15min</p>
+                            <div class="w-full bg-slate-200 rounded-full h-3 overflow-hidden">
+                                <div class="bg-emerald-500 h-3 rounded-full" style="width: 88%"></div>
+                            </div>
+                            <span class="text-[10px] font-extrabold text-emerald-600 mt-1 inline-block">88% Eficiencia de Triaje</span>
+                        </div>
+                        <div class="p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                            <p class="text-xs font-bold text-slate-700 mb-2">Capacidad Operativa del Servicio</p>
+                            <div class="w-full bg-slate-200 rounded-full h-3 overflow-hidden">
+                                <div class="bg-brand-600 h-3 rounded-full" style="width: 65%"></div>
+                            </div>
+                            <span class="text-[10px] font-extrabold text-brand-700 mt-1 inline-block">65% Ocupación Médica</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+        </div>
+    </main>
+
+    <!-- ================= MODAL: NUEVO REGISTRO DE TRIAJE (BASADO EN REFERENCIA) ================= -->
+    <div id="newTriageModal" class="fixed inset-0 z-50 hidden bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+        <div class="bg-white rounded-3xl max-w-3xl w-full shadow-2xl overflow-hidden animate-fadeIn my-auto">
+            
+            <div class="bg-brand-800 text-white px-6 py-4 flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <span class="text-2xl">🩺</span>
+                    <div>
+                        <h3 class="font-extrabold text-sm sm:text-base">Admitir Paciente - Formulario de Triaje</h3>
+                        <p class="text-[11px] text-brand-200">Captura de Signos Vitales y Funciones Vitales Adicionales</p>
+                    </div>
+                </div>
+                <button onclick="closeNewTriageModal()" class="text-slate-300 hover:text-white text-xl font-bold p-1">✕</button>
+            </div>
+
+            <form id="triageForm" onsubmit="saveNewTriage(event)" class="p-4 sm:p-6 space-y-4 max-h-[80vh] overflow-y-auto custom-scrollbar">
+                
+                <!-- Section 1: Personal Data -->
+                <div>
+                    <h4 class="text-xs font-extrabold text-brand-800 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                        <span>👤</span> 1. Filiación e Identificación del Paciente
+                    </h4>
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        <div class="sm:col-span-2">
+                            <label class="text-[10px] font-bold text-slate-500 uppercase block mb-1">Apellidos y Nombres *</label>
+                            <input type="text" id="formPaciente" required placeholder="Ej: PEREZ GARCIA, JUAN" class="filter-input w-full px-3 py-2 text-xs rounded-xl uppercase font-semibold">
+                        </div>
+                        <div>
+                            <label class="text-[10px] font-bold text-slate-500 uppercase block mb-1">DNI / Doc *</label>
+                            <input type="text" id="formDni" maxlength="8" required placeholder="8 dígitos" class="filter-input w-full px-3 py-2 text-xs rounded-xl font-mono">
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-3 gap-3 mt-2.5">
+                        <div>
+                            <label class="text-[10px] font-bold text-slate-500 uppercase block mb-1">HC (Historia Clínica)</label>
+                            <input type="text" id="formHc" placeholder="Ej: HC-009855" class="filter-input w-full px-3 py-2 text-xs rounded-xl font-mono">
+                        </div>
+                        <div>
+                            <label class="text-[10px] font-bold text-slate-500 uppercase block mb-1">Edad *</label>
+                            <input type="text" id="formEdad" required placeholder="Ej: 42a" class="filter-input w-full px-3 py-2 text-xs rounded-xl">
+                        </div>
+                        <div>
+                            <label class="text-[10px] font-bold text-slate-500 uppercase block mb-1">Sexo *</label>
+                            <select id="formSexo" class="filter-input w-full px-3 py-2 text-xs rounded-xl font-semibold">
+                                <option value="M">Masculino (M)</option>
+                                <option value="F">Femenino (F)</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Section 2: Triage Block (Matching Reference Image) -->
+                <div>
+                    <h4 class="text-xs font-extrabold text-brand-800 uppercase tracking-wider mb-2.5 flex items-center gap-1.5">
+                        <span>📊</span> 2. Datos de Triaje (Basado en Estándar Clínico)
+                    </h4>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        
+                        <!-- PANEL 1: SIGNOS VITALES -->
+                        <div class="bg-sky-50/90 border border-sky-200 p-3.5 rounded-2xl">
+                            <div class="bg-sky-700 text-white text-xs font-extrabold px-3 py-1.5 rounded-xl mb-3 flex items-center justify-between">
+                                <span>Signos Vitales</span>
+                                <span class="text-[9px] font-normal opacity-90">Rangos Normales</span>
+                            </div>
+                            
+                            <div class="space-y-2.5 text-xs">
+                                <!-- PA -->
+                                <div>
+                                    <div class="flex justify-between text-[10px] font-bold text-slate-600 mb-1">
+                                        <span>📈 PA (Presión Arterial)</span>
+                                        <span class="text-sky-700 font-mono text-[9px]">Sist: 90-120 / Diast: 60-80</span>
+                                    </div>
+                                    <div class="grid grid-cols-2 gap-2">
+                                        <input type="number" id="formPaSist" required placeholder="Sist (90-120)" class="filter-input w-full px-2.5 py-1.5 bg-white rounded-xl font-mono text-xs font-bold text-slate-800">
+                                        <input type="number" id="formPaDiast" required placeholder="Diast (60-80)" class="filter-input w-full px-2.5 py-1.5 bg-white rounded-xl font-mono text-xs font-bold text-slate-800">
+                                    </div>
+                                </div>
+
+                                <!-- FC -->
+                                <div class="grid grid-cols-3 items-center gap-2">
+                                    <span class="font-bold text-slate-700 text-[10px] flex items-center gap-1">❤️ FC (bpm):</span>
+                                    <input type="number" id="formFc" required placeholder="50 - 100" class="col-span-2 filter-input w-full px-2.5 py-1.5 bg-white rounded-xl font-mono text-xs font-bold text-slate-800">
+                                </div>
+
+                                <!-- FR -->
+                                <div class="grid grid-cols-3 items-center gap-2">
+                                    <span class="font-bold text-slate-700 text-[10px] flex items-center gap-1">🫁 FR (rpm):</span>
+                                    <input type="number" id="formFr" required placeholder="12 - 20" class="col-span-2 filter-input w-full px-2.5 py-1.5 bg-white rounded-xl font-mono text-xs font-bold text-slate-800">
+                                </div>
+
+                                <!-- SAT % -->
+                                <div class="grid grid-cols-3 items-center gap-2">
+                                    <span class="font-bold text-slate-700 text-[10px] flex items-center gap-1">🫁 SAT (%):</span>
+                                    <input type="number" id="formSat" required placeholder="95 - 100%" class="col-span-2 filter-input w-full px-2.5 py-1.5 bg-white rounded-xl font-mono text-xs font-bold text-slate-800">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- PANEL 2: ADICIONALES -->
+                        <div class="bg-blue-50/90 border border-blue-200 p-3.5 rounded-2xl">
+                            <div class="bg-brand-700 text-white text-xs font-extrabold px-3 py-1.5 rounded-xl mb-3 flex items-center justify-between">
+                                <span>Adicionales & Antropometría</span>
+                                <span class="text-[9px] font-normal opacity-90">Valores Clínicos</span>
+                            </div>
+
+                            <div class="space-y-2.5 text-xs">
+                                <!-- Temp °C -->
+                                <div class="grid grid-cols-3 items-center gap-2">
+                                    <span class="font-bold text-slate-700 text-[10px] flex items-center gap-1">🌡️ T° (°C):</span>
+                                    <input type="number" step="0.1" id="formT" required placeholder="36 - 37 °C" class="col-span-2 filter-input w-full px-2.5 py-1.5 bg-white rounded-xl font-mono text-xs font-bold text-slate-800">
+                                </div>
+
+                                <!-- Talla cm -->
+                                <div class="grid grid-cols-3 items-center gap-2">
+                                    <span class="font-bold text-slate-700 text-[10px] flex items-center gap-1">📏 Talla (cm):</span>
+                                    <input type="number" id="formTalla" placeholder="cm (e.g. 165)" class="col-span-2 filter-input w-full px-2.5 py-1.5 bg-white rounded-xl font-mono text-xs font-bold text-slate-800">
+                                </div>
+
+                                <!-- Peso Kg -->
+                                <div class="grid grid-cols-3 items-center gap-2">
+                                    <span class="font-bold text-slate-700 text-[10px] flex items-center gap-1">⚖️ Peso (Kg):</span>
+                                    <input type="number" step="0.1" id="formPeso" placeholder="Kg (e.g. 70)" class="col-span-2 filter-input w-full px-2.5 py-1.5 bg-white rounded-xl font-mono text-xs font-bold text-slate-800">
+                                </div>
+
+                                <!-- Glucosa -->
+                                <div class="grid grid-cols-3 items-center gap-2">
+                                    <span class="font-bold text-slate-700 text-[10px] flex items-center gap-1">🩸 Glucosa:</span>
+                                    <input type="number" id="formGlucosa" placeholder="mg/dL (70-140)" class="col-span-2 filter-input w-full px-2.5 py-1.5 bg-white rounded-xl font-mono text-xs font-bold text-slate-800">
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
+                <!-- Sintomatología -->
+                <div>
+                    <label class="text-[10px] font-bold text-slate-500 uppercase block mb-1">Motivo Principal de Consulta / Síntomas Agudos *</label>
+                    <textarea id="formMotivo" rows="2" required placeholder="Describa malestar principal, dolor, evolución de síntomas..." class="filter-input w-full p-2.5 text-xs rounded-xl"></textarea>
+                </div>
+
+                <div class="flex items-center justify-end gap-3 pt-3 border-t border-slate-100">
+                    <button type="button" onclick="closeNewTriageModal()" class="px-4 py-2 rounded-xl text-xs font-extrabold text-slate-500 hover:bg-slate-100 transition-all">Cancelar</button>
+                    <button type="submit" class="px-5 py-2 rounded-xl text-xs font-extrabold text-white bg-brand-700 hover:bg-brand-800 shadow-md transition-all uppercase tracking-wider">
+                        Guardar & Categorizar Paciente
+                    </button>
+                </div>
+
+            </form>
+        </div>
+    </div>
+
+    <!-- DRAWER: FICHA CLÍNICA DETALLADA -->
+    <div id="patientDrawer" class="fixed inset-0 z-50 hidden bg-slate-900/40 backdrop-blur-xs flex justify-end">
+        <!-- ... existing content ... -->
+    </div>
+
+    <!-- MODAL: CONFIGURACIÓN DE NODO Y SERVIDORES HIS -->
+    <div id="nodeConfigModal" class="fixed inset-0 z-50 hidden bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+        <div class="bg-white rounded-3xl max-w-lg w-full shadow-2xl overflow-hidden animate-fadeIn my-auto">
+            <div class="bg-slate-900 text-white px-6 py-4 flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <span class="text-2xl">🌐</span>
+                    <div>
+                        <h3 class="font-extrabold text-sm sm:text-base">Configuración de Nodo IP & Servidor HIS</h3>
+                        <p class="text-[11px] text-slate-400">Servidor de Base de Datos - Red Intranet Ventanilla</p>
+                    </div>
+                </div>
+                <button onclick="closeNodeConfigModal()" class="text-slate-400 hover:text-white text-xl font-bold">✕</button>
+            </div>
+            
+            <form onsubmit="saveNodeConfig(event)" class="p-5 space-y-4">
+                <div>
+                    <label class="text-[10px] font-extrabold text-slate-500 uppercase block mb-1">Dirección IP del Nodo / Servidor *</label>
+                    <div class="flex gap-2">
+                        <input type="text" id="configIpInput" value="172.18.26.18" required pattern="^((25[0-5]|(2[0-4]|1\d|[1-9]|)\d)\.){3}(25[0-5]|(2[0-4]|1\d|[1-9]|)\d)$" placeholder="Ej: 172.18.26.18" class="filter-input flex-1 px-3 py-2 text-xs font-mono rounded-xl">
+                        <input type="number" id="configPortInput" value="8080" required placeholder="Puerto" class="filter-input w-24 px-3 py-2 text-xs font-mono rounded-xl">
+                    </div>
+                    <p class="text-[10px] text-slate-400 mt-1">✓ IP Clase B (172.18.x.x) - Estándar Red Intranet Salud Ventanilla / MINSA</p>
+                </div>
+
+                <div>
+                    <label class="text-[10px] font-extrabold text-slate-500 uppercase block mb-1">Modo de Operación de Consultas</label>
+                    <select id="configModeSelect" onchange="toggleApiEndpointInput()" class="filter-input w-full px-3 py-2 text-xs font-semibold rounded-xl">
+                        <option value="simulated">Modo Híbrido / Simulación Local (Demo 100% Funcional)</option>
+                        <option value="real_api">Conexión Directa API REST / Servidor HIS Hospitalario</option>
+                    </select>
+                </div>
+
+                <div id="endpointContainer" class="hidden space-y-2.5">
+                    <div>
+                        <label class="text-[10px] font-extrabold text-slate-500 uppercase block mb-1">Endpoint API de Consulta de Triaje (Histórico)</label>
+                        <input type="text" id="configEndpointInput" value="/api/v1/triaje/consultas" placeholder="/api/v1/triaje/consultas" class="filter-input w-full px-3 py-2 text-xs font-mono rounded-xl">
+                    </div>
+                    <div>
+                        <label class="text-[10px] font-extrabold text-slate-500 uppercase block mb-1">Token de Autenticación Intranet / Key</label>
+                        <input type="password" id="configTokenInput" value="••••••••••••••••" placeholder="Token de integración" class="filter-input w-full px-3 py-2 text-xs font-mono rounded-xl">
+                    </div>
+                </div>
+
+                <div id="pingResultBox" class="p-3.5 bg-slate-50 border border-slate-200 rounded-2xl text-xs flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                        <span id="pingIcon" class="text-xl">🟢</span>
+                        <div>
+                            <p class="font-extrabold text-slate-800 text-xs" id="pingStatusText">Nodo 172.18.26.18 Conectado</p>
+                            <p class="text-[10px] text-slate-500 font-mono" id="pingLatencyText">Respuesta: 12ms • HTTPS SSL OK • Viabilidad 100%</p>
+                        </div>
+                    </div>
+                    <button type="button" onclick="testNodeConnection()" class="bg-brand-50 hover:bg-brand-100 text-brand-700 border border-brand-200 px-3 py-1.5 rounded-xl text-[10px] font-extrabold transition-all">
+                        🔍 Probar Ping
+                    </button>
+                </div>
+
+                <div class="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
+                    <button type="button" onclick="closeNodeConfigModal()" class="px-4 py-2 rounded-xl text-xs font-bold text-slate-500 hover:bg-slate-100">Cancelar</button>
+                    <button type="submit" class="px-5 py-2 rounded-xl text-xs font-extrabold text-white bg-brand-700 hover:bg-brand-800 shadow-md uppercase tracking-wider">
+                        Guardar & Verificar Nodo
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- CONTENEDOR TOAST NOTIFICACIONES -->
+    <div id="toastContainer" class="fixed bottom-5 right-5 z-50 space-y-2 pointer-events-none"></div>
+
+    <script>
+        // --- BASE DE DATOS TRIAJE EXPANDIDA PARA PRUEBAS DE PAGINACIÓN ---
+        let RAW_DATA = [
+            { id: 1, hc: 'HC-009231', fecha: '2026-08-04', hora: '08:15', paciente: 'ZARATE MENDOZA, ELENA MARIA', dni: '09223341', edad: '62a', sexo: 'F', paSist: 150, paDiast: 95, fc: 110, fr: 24, sat: 91, t: 38.8, talla: 160, peso: 78, glucosa: 185, riesgo: 'critico', motivo: 'Dificultad respiratoria severa, tos continua y sensación febril intensa.' },
+            { id: 2, hc: 'HC-008412', fecha: '2026-08-04', hora: '09:42', paciente: 'GOMEZ RIVERA, CARLOS AUGUSTO', dni: '45892231', edad: '45a', sexo: 'M', paSist: 120, paDiast: 80, fc: 72, fr: 16, sat: 98, t: 36.5, talla: 175, peso: 72, glucosa: 98, riesgo: 'estable', motivo: 'Chequeo general ambulatorio y leve dolor articular en rodilla.' },
+            { id: 3, hc: 'HC-007501', fecha: '2026-08-04', hora: '10:05', paciente: 'QUISPE LAURA, JUAN SEBASTIAN', dni: '70221145', edad: '12a', sexo: 'M', paSist: 110, paDiast: 70, fc: 80, fr: 18, sat: 99, t: 37.1, talla: 142, peso: 38, glucosa: 90, riesgo: 'estable', motivo: 'Evaluación pediátrica por rash cutáneo alérgico leve.' },
+            { id: 4, hc: 'HC-006321', fecha: '2026-08-04', hora: '11:30', paciente: 'HUAMAN ORELLANA, ROSA LUZ', dni: '44551122', edad: '28a', sexo: 'F', paSist: 118, paDiast: 76, fc: 104, fr: 22, sat: 96, t: 39.2, talla: 158, peso: 60, glucosa: 115, riesgo: 'alto', motivo: 'Síndrome febril agudo de causa por determinar y malestar general.' },
+            { id: 5, hc: 'HC-005102', fecha: '2026-08-04', hora: '12:55', paciente: 'VILLALOBOS TORRES, LUIS FERNANDO', dni: '10293847', edad: '75a', sexo: 'M', paSist: 85, paDiast: 55, fc: 122, fr: 28, sat: 88, t: 35.8, talla: 168, peso: 80, glucosa: 240, riesgo: 'critico', motivo: 'Descompensación hemodinámica, disnea en reposo e hiperglicemia.' },
+            { id: 6, hc: 'HC-004399', fecha: '2026-08-04', hora: '13:10', paciente: 'ALVAREZ CASTRO, MILAGROS LUCIA', dni: '41223344', edad: '34a', sexo: 'F', paSist: 135, paDiast: 88, fc: 88, fr: 19, sat: 97, t: 37.5, talla: 162, peso: 68, glucosa: 110, riesgo: 'moderado', motivo: 'Cefalea intensa refractaria a analgésicos comunes.' },
+            { id: 7, hc: 'HC-003881', fecha: '2026-08-04', hora: '13:45', paciente: 'RAMIREZ SUAREZ, JORGE ENRIQUE', dni: '08998877', edad: '58a', sexo: 'M', paSist: 165, paDiast: 102, fc: 95, fr: 20, sat: 96, t: 36.8, talla: 170, peso: 85, glucosa: 195, riesgo: 'alto', motivo: 'Crisis hipertensiva asintomática detectada en control.' },
+            { id: 8, hc: 'HC-002110', fecha: '2026-08-04', hora: '14:20', paciente: 'FLORES SANCHEZ, ANA BELEN', dni: '73445566', edad: '22a', sexo: 'F', paSist: 115, paDiast: 75, fc: 76, fr: 16, sat: 99, t: 36.7, talla: 155, peso: 52, glucosa: 92, riesgo: 'estable', motivo: 'Traumatismo leve en tobillo derecho por caída de altura propia.' },
+            { id: 9, hc: 'HC-001920', fecha: '2026-08-04', hora: '14:50', paciente: 'TORRES VEGA, DIEGO ALONSO', dni: '48776655', edad: '39a', sexo: 'M', paSist: 125, paDiast: 82, fc: 108, fr: 21, sat: 94, t: 38.6, talla: 178, peso: 90, glucosa: 130, riesgo: 'alto', motivo: 'Dolor abdominal agudo en fosa ilíaca derecha con náuseas.' },
+            { id: 10, hc: 'HC-001004', fecha: '2026-08-04', hora: '15:15', paciente: 'CHAVEZ MORALES, SOFIA BEATRIZ', dni: '15667788', edad: '67a', sexo: 'F', paSist: 140, paDiast: 90, fc: 84, fr: 18, sat: 95, t: 37.0, talla: 150, peso: 70, glucosa: 210, riesgo: 'moderado', motivo: 'Parestesia en miembros inferiores e hiperglicemia evolutiva.' },
+            { id: 11, hc: 'HC-000882', fecha: '2026-08-04', hora: '15:40', paciente: 'PAREDES DIAZ, MATEO ISAAC', dni: '76554433', edad: '19a', sexo: 'M', paSist: 110, paDiast: 70, fc: 68, fr: 15, sat: 98, t: 36.4, talla: 172, peso: 65, glucosa: 88, riesgo: 'estable', motivo: 'Laceración cutánea en antebrazo derecho necesitada de sutura.' },
+            { id: 12, hc: 'HC-000774', fecha: '2026-08-04', hora: '16:05', paciente: 'CASTILLO ROJAS, VALERIA INES', dni: '40112233', edad: '51a', sexo: 'F', paSist: 175, paDiast: 110, fc: 115, fr: 25, sat: 92, t: 37.2, talla: 159, peso: 82, glucosa: 160, riesgo: 'critico', motivo: 'Precordialgia opresiva irradiada a mandíbula y diaforesis.' },
+            { id: 13, hc: 'HC-000650', fecha: '2026-08-04', hora: '16:30', paciente: 'NÚÑEZ CORREA, MARIO ARTURO', dni: '09887766', edad: '81a', sexo: 'M', paSist: 98, paDiast: 62, fc: 54, fr: 14, sat: 93, t: 36.0, talla: 165, peso: 60, glucosa: 105, riesgo: 'moderado', motivo: 'Somnolencia inusual y astenia marcada.' },
+            { id: 14, hc: 'HC-000512', fecha: '2026-08-04', hora: '17:00', paciente: 'VARGAS MEDINA, PATRICIA ROCIO', dni: '43221100', edad: '31a', sexo: 'F', paSist: 120, paDiast: 80, fc: 78, fr: 16, sat: 99, t: 36.6, talla: 164, peso: 58, glucosa: 95, riesgo: 'estable', motivo: 'Consulta por lumbalgia mecánica posterior a esfuerzo físico.' },
+            { id: 15, hc: 'HC-000411', fecha: '2026-08-04', hora: '17:25', paciente: 'REYES SALAZAR, GABRIEL OMAR', dni: '71998811', edad: '26a', sexo: 'M', paSist: 130, paDiast: 85, fc: 98, fr: 20, sat: 97, t: 38.3, talla: 176, peso: 79, glucosa: 112, riesgo: 'moderado', motivo: 'Odinofragia intensa con placas purulentas y fiebre.' }
+        ];
+
+        let filteredData = [...RAW_DATA];
+        let currentSelectedPatient = null;
+        let flowChartInstance = null;
+        let priorityChartInstance = null;
+
+        let nodeConfig = {
+            ip: '172.18.26.18',
+            port: '8080',
+            mode: 'simulated',
+            endpoint: '/api/v1/triaje/consultas',
+            status: 'online'
+        };
+
+        function openNodeConfigModal() {
+            document.getElementById('configIpInput').value = nodeConfig.ip;
+            document.getElementById('configPortInput').value = nodeConfig.port;
+            document.getElementById('configModeSelect').value = nodeConfig.mode;
+            document.getElementById('configEndpointInput').value = nodeConfig.endpoint;
+            toggleApiEndpointInput();
+            document.getElementById('nodeConfigModal').classList.remove('hidden');
+        }
+
+        function closeNodeConfigModal() {
+            document.getElementById('nodeConfigModal').classList.add('hidden');
+        }
+
+        function toggleApiEndpointInput() {
+            const mode = document.getElementById('configModeSelect').value;
+            const container = document.getElementById('endpointContainer');
+            if (mode === 'real_api') {
+                container.classList.remove('hidden');
+            } else {
+                container.classList.add('hidden');
+            }
+        }
+
+        function testNodeConnection() {
+            const statusText = document.getElementById('pingStatusText');
+            const latencyText = document.getElementById('pingLatencyText');
+            const pingIcon = document.getElementById('pingIcon');
+            const ip = document.getElementById('configIpInput').value;
+
+            pingIcon.innerText = '⏳';
+            statusText.innerText = 'Probando conexión con ' + ip + '...';
+
+            setTimeout(() => {
+                const ms = Math.floor(8 + Math.random() * 14);
+                pingIcon.innerText = '🟢';
+                statusText.innerText = `Nodo ${ip} Activo y Viable`;
+                latencyText.innerText = `IP: ${ip} • Latencia: ${ms}ms • HTTPS / REST Ready`;
+                triggerToast(`Conexión exitosa con el servidor ${ip}`, 'success');
+            }, 700);
+        }
+
+        function saveNodeConfig(e) {
+            e.preventDefault();
+            nodeConfig.ip = document.getElementById('configIpInput').value;
+            nodeConfig.port = document.getElementById('configPortInput').value;
+            nodeConfig.mode = document.getElementById('configModeSelect').value;
+            nodeConfig.endpoint = document.getElementById('configEndpointInput').value;
+
+            const label = document.getElementById('nodeIpLabel');
+            if (label) label.innerText = `Nodo: ${nodeConfig.ip}`;
+
+            closeNodeConfigModal();
+            triggerToast(`Configuración de IP ${nodeConfig.ip} guardada correctamente`, 'success');
+        }
+
+        // Estado de Paginación
+        let currentPage = 1;
+        let itemsPerPage = 10;
+
+        const formatDate = (dateStr) => {
+            if (!dateStr) return '';
+            const parts = dateStr.split('-');
+            return `${parts[2]}.${parts[1]}.${parts[0]}`;
+        };
+
+        function calculateIMC(peso, tallaCm) {
+            if (!peso || !tallaCm) return null;
+            const m = tallaCm / 100;
+            return (peso / (m * m)).toFixed(1);
+        }
+
+        // EVALUACIÓN CLÍNICA SEGÚN RANGOS REFERENCIALES
+        function evaluateClinicalAlerts(item) {
+            const alerts = [];
+            
+            if (item.paSist >= 140 || item.paDiast >= 90) alerts.push({ text: 'HTA', cls: 'bg-red-50 text-red-700 border-red-200' });
+            else if (item.paSist < 90 || item.paDiast < 60) alerts.push({ text: 'Hipotensión', cls: 'bg-red-100 text-red-800 border-red-300' });
+
+            if (item.fc > 100) alerts.push({ text: 'Taquicardia', cls: 'bg-amber-50 text-amber-700 border-amber-200' });
+            else if (item.fc < 50) alerts.push({ text: 'Bradicardia', cls: 'bg-amber-50 text-amber-700 border-amber-200' });
+
+            if (item.fr > 20) alerts.push({ text: 'Taquipnea', cls: 'bg-orange-50 text-orange-700 border-orange-200' });
+
+            if (item.sat < 90) alerts.push({ text: 'Hipoxia Severa', cls: 'bg-red-100 text-red-800 border-red-300 font-extrabold pulse-red' });
+            else if (item.sat < 95) alerts.push({ text: 'SatO2 Baja', cls: 'bg-amber-50 text-amber-700 border-amber-200' });
+
+            if (item.t >= 38.0) alerts.push({ text: `Fiebre (${item.t}°C)`, cls: 'bg-red-50 text-red-700 border-red-200' });
+            else if (item.t < 35.5) alerts.push({ text: 'Hipotermia', cls: 'bg-blue-50 text-blue-700 border-blue-200' });
+
+            if (item.glucosa > 180) alerts.push({ text: `Hiperglicemia`, cls: 'bg-purple-50 text-purple-700 border-purple-200' });
+
+            return alerts;
+        }
+
+        function calculateTriagePriority(paSist, paDiast, fc, fr, sat, t, glucosa) {
+            if (sat < 90 || t >= 39.5 || paSist < 90 || fc > 120 || fr > 26 || (glucosa && glucosa < 60)) {
+                return 'critico';
+            } else if (sat < 95 || t >= 38.5 || paSist >= 140 || fc > 100 || fr > 20 || (glucosa && glucosa > 200)) {
+                return 'alto';
+            } else if (t >= 37.8 || paSist >= 130) {
+                return 'moderado';
+            }
+            return 'estable';
+        }
+
+        function triggerToast(msg, type = 'info') {
+            const container = document.getElementById('toastContainer');
+            if (!container) return;
+            const toast = document.createElement('div');
+            
+            const bgClass = type === 'danger' ? 'bg-red-900 text-white' : 
+                            type === 'success' ? 'bg-emerald-900 text-white' : 'bg-slate-900 text-white';
+            
+            toast.className = `pointer-events-auto flex items-center gap-2.5 px-4 py-2.5 rounded-xl shadow-xl text-xs font-bold ${bgClass} transition-all transform translate-y-2 opacity-0`;
+            toast.innerHTML = `<span>${type === 'danger' ? '🚨' : type === 'success' ? '✅' : 'ℹ️'}</span> <span>${msg}</span>`;
+            
+            container.appendChild(toast);
+            
+            setTimeout(() => { toast.classList.remove('translate-y-2', 'opacity-0'); }, 10);
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-y-2');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        function executeFilter() {
+            const start = document.getElementById('dateStart').value;
+            const end = document.getElementById('dateEnd').value;
+            const text = document.getElementById('textSearch').value.toLowerCase().trim();
+            const priority = document.getElementById('priorityFilter').value;
+
+            filteredData = RAW_DATA.filter(item => {
+                let matchDate = true;
+                if (start && end) matchDate = item.fecha >= start && item.fecha <= end;
+                
+                const matchText = item.paciente.toLowerCase().includes(text) || 
+                                 item.dni.includes(text) || 
+                                 item.hc.toLowerCase().includes(text);
+                
+                let matchPriority = true;
+                if (priority !== 'TODOS') matchPriority = item.riesgo === priority;
+                
+                return matchDate && matchText && matchPriority;
+            });
+
+            currentPage = 1; // Reiniciar a la primera página al filtrar
+            renderTable();
+            updateStats();
+        }
+
+        function resetFilters() {
+            document.getElementById('dateStart').value = '';
+            document.getElementById('dateEnd').value = '';
+            document.getElementById('textSearch').value = '';
+            document.getElementById('priorityFilter').value = 'TODOS';
+            filteredData = [...RAW_DATA];
+            currentPage = 1;
+            renderTable();
+            updateStats();
+            triggerToast('Filtros restablecidos', 'info');
+        }
+
+        function changePageSize(val) {
+            itemsPerPage = val === 'ALL' ? 999999 : parseInt(val);
+            currentPage = 1;
+            renderTable();
+        }
+
+        function goToPage(page) {
+            const totalPages = itemsPerPage === 999999 ? 1 : Math.ceil(filteredData.length / itemsPerPage);
+            if (page < 1 || page > totalPages) return;
+            currentPage = page;
+            renderTable();
+        }
+
+        function renderTable() {
+            const body = document.getElementById('dataTableBody');
+            const msg = document.getElementById('emptyMsg');
+            const infoEl = document.getElementById('paginationInfo');
+            const controlsEl = document.getElementById('paginationControls');
+
+            if (!body) return;
+
+            const totalItems = filteredData.length;
+
+            if (totalItems === 0) {
+                body.innerHTML = '';
+                if (msg) msg.classList.remove('hidden');
+                if (infoEl) infoEl.innerText = 'Mostrando 0 - 0 de 0 casos';
+                if (controlsEl) controlsEl.innerHTML = '';
+                return;
+            }
+
+            if (msg) msg.classList.add('hidden');
+
+            // Paginado matemático
+            const effectiveLimit = itemsPerPage === 999999 ? totalItems : itemsPerPage;
+            const totalPages = Math.ceil(totalItems / effectiveLimit);
+
+            if (currentPage > totalPages) currentPage = totalPages || 1;
+
+            const startIndex = (currentPage - 1) * effectiveLimit;
+            const endIndex = Math.min(startIndex + effectiveLimit, totalItems);
+
+            const pageData = filteredData.slice(startIndex, endIndex);
+
+            // Actualizar texto informativo
+            if (infoEl) {
+                if (itemsPerPage === 999999) {
+                    infoEl.innerText = `Mostrando los ${totalItems} casos (TOTAL)`;
+                } else {
+                    infoEl.innerText = `Mostrando ${startIndex + 1} - ${endIndex} de ${totalItems} casos`;
+                }
+            }
+
+            // Renderizar Filas visibles
+            body.innerHTML = pageData.map(row => {
+                let badgeClass = '';
+                let badgeText = '';
+                if (row.riesgo === 'critico') {
+                    badgeClass = 'bg-red-50 text-red-700 border-red-200 font-black pulse-red';
+                    badgeText = 'P-I • CRÍTICO';
+                } else if (row.riesgo === 'alto') {
+                    badgeClass = 'bg-orange-50 text-orange-700 border-orange-200 font-extrabold';
+                    badgeText = 'P-II • URGENTE';
+                } else if (row.riesgo === 'moderado') {
+                    badgeClass = 'bg-amber-50 text-amber-700 border-amber-200 font-bold';
+                    badgeText = 'P-III • MODERADO';
+                } else {
+                    badgeClass = 'bg-emerald-50 text-emerald-700 border-emerald-200 font-bold';
+                    badgeText = 'P-IV • ESTABLE';
+                }
+
+                const alerts = evaluateClinicalAlerts(row);
+                const imc = calculateIMC(row.peso, row.talla);
+
+                const alertsHtml = alerts.length > 0 
+                    ? alerts.map(a => `<span class="text-[9px] px-1.5 py-0.5 rounded border font-bold ${a.cls}">${a.text}</span>`).join('')
+                    : `<span class="text-[9px] px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200 font-semibold">Rango Normal</span>`;
+
+                return `
+                    <tr class="table-row-hover">
+                        <td class="px-4 py-3">
+                            <p class="font-bold text-slate-800 font-mono text-xs">${formatDate(row.fecha)}</p>
+                            <p class="text-[10px] text-slate-500 font-medium">${row.hora} hrs</p>
+                        </td>
+                        <td class="px-4 py-3">
+                            <div class="flex flex-col gap-0.5">
+                                <span class="font-extrabold text-slate-900 uppercase text-xs leading-snug">${row.paciente}</span>
+                                <div class="flex items-center gap-1.5 text-[10px]">
+                                    <span class="text-slate-500 font-mono">DNI: ${row.dni}</span>
+                                    <span class="text-brand-700 font-bold font-mono bg-blue-50 px-1 rounded">${row.hc}</span>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-3 py-3 text-center">
+                            <span class="bg-slate-100 text-slate-700 px-2 py-0.5 rounded-lg font-bold text-[10px] inline-block">
+                                ${row.edad} / ${row.sexo}
+                            </span>
+                            ${imc ? `<p class="text-[8px] font-extrabold text-slate-400 mt-0.5">IMC: ${imc}</p>` : ''}
+                        </td>
+                        <td class="px-4 py-3">
+                            <div class="space-y-1.5">
+                                <div class="grid grid-cols-6 gap-1 text-center bg-slate-50 p-1.5 rounded-xl border border-slate-100 font-mono text-[10px]">
+                                    <div><span class="block text-[8px] text-slate-400 font-bold">PA</span><span class="font-bold text-slate-800">${row.paSist}/${row.paDiast}</span></div>
+                                    <div><span class="block text-[8px] text-slate-400 font-bold">FC</span><span class="font-bold ${row.fc > 100 ? 'text-amber-600' : 'text-slate-800'}">${row.fc}</span></div>
+                                    <div><span class="block text-[8px] text-slate-400 font-bold">FR</span><span class="font-bold ${row.fr > 20 ? 'text-orange-600' : 'text-slate-800'}">${row.fr}</span></div>
+                                    <div><span class="block text-[8px] text-slate-400 font-bold">SpO2</span><span class="font-bold ${row.sat < 94 ? 'text-red-600' : 'text-slate-800'}">${row.sat}%</span></div>
+                                    <div><span class="block text-[8px] text-slate-400 font-bold">T°</span><span class="font-bold ${row.t >= 38 ? 'text-red-600' : 'text-slate-800'}">${row.t}°</span></div>
+                                    <div><span class="block text-[8px] text-slate-400 font-bold">Glu</span><span class="font-bold text-slate-800">${row.glucosa || '--'}</span></div>
+                                </div>
+                                <div class="flex flex-wrap items-center gap-1">
+                                    ${alertsHtml}
+                                    <span class="text-[9px] text-slate-500 italic truncate max-w-[200px]" title="${row.motivo}">"${row.motivo}"</span>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-3 py-3 text-center">
+                            <span class="text-[9px] px-2.5 py-1 rounded-full border ${badgeClass}">
+                                ${badgeText}
+                            </span>
+                        </td>
+                        <td class="px-3 py-3 text-center">
+                            <button onclick="openPatientDrawer(${row.id})" class="bg-slate-100 hover:bg-brand-50 text-slate-700 hover:text-brand-700 px-2.5 py-1 rounded-lg font-bold text-xs transition-all border border-slate-200">
+                                👁️ Ficha
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+
+            // Renderizar Botones de Paginación
+            renderPaginationControls(totalPages);
+        }
+
+        function renderPaginationControls(totalPages) {
+            const controlsEl = document.getElementById('paginationControls');
+            if (!controlsEl) return;
+
+            if (totalPages <= 1) {
+                controlsEl.innerHTML = '';
+                return;
+            }
+
+            let html = '';
+
+            // Botón Anterior
+            const prevDisabled = currentPage === 1;
+            html += `
+                <button onclick="goToPage(${currentPage - 1})" ${prevDisabled ? 'disabled' : ''} 
+                    class="px-2.5 py-1 rounded-lg text-xs font-extrabold transition-all border ${
+                        prevDisabled ? 'bg-slate-100 text-slate-300 border-slate-200 cursor-not-allowed' : 'bg-white text-slate-700 border-slate-300 hover:bg-brand-50 hover:text-brand-700'
+                    }">
+                    « Ant
+                </button>
+            `;
+
+            // Números de Página
+            for (let p = 1; p <= totalPages; p++) {
+                const isActive = p === currentPage;
+                html += `
+                    <button onclick="goToPage(${p})" 
+                        class="px-3 py-1 rounded-lg text-xs font-black transition-all border ${
+                            isActive 
+                                ? 'bg-brand-700 text-white border-brand-700 shadow-xs' 
+                                : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-100'
+                        }">
+                        ${p}
+                    </button>
+                `;
+            }
+
+            // Botón Siguiente
+            const nextDisabled = currentPage === totalPages;
+            html += `
+                <button onclick="goToPage(${currentPage + 1})" ${nextDisabled ? 'disabled' : ''} 
+                    class="px-2.5 py-1 rounded-lg text-xs font-extrabold transition-all border ${
+                        nextDisabled ? 'bg-slate-100 text-slate-300 border-slate-200 cursor-not-allowed' : 'bg-white text-slate-700 border-slate-300 hover:bg-brand-50 hover:text-brand-700'
+                    }">
+                    Sig »
+                </button>
+            `;
+
+            controlsEl.innerHTML = html;
+        }
+
+        function updateStats() {
+            const elTotal = document.getElementById('statTotal');
+            if (elTotal) elTotal.innerText = RAW_DATA.length;
+
+            const elCritical = document.getElementById('statCritical');
+            if (elCritical) {
+                const criticals = RAW_DATA.filter(r => r.riesgo === 'critico' || r.riesgo === 'alto').length;
+                elCritical.innerText = `${criticals} hoy`;
+            }
+
+            if (priorityChartInstance && priorityChartInstance.data && priorityChartInstance.data.datasets[0]) {
+                const countStables = RAW_DATA.filter(r => r.riesgo === 'estable').length;
+                const countMod = RAW_DATA.filter(r => r.riesgo === 'moderado').length;
+                const countHigh = RAW_DATA.filter(r => r.riesgo === 'alto').length;
+                const countCrit = RAW_DATA.filter(r => r.riesgo === 'critico').length;
+                
+                priorityChartInstance.data.datasets[0].data = [countStables, countMod, countHigh, countCrit];
+                priorityChartInstance.update();
+            }
+        }
+
+        function openNewTriageModal() {
+            const modal = document.getElementById('newTriageModal');
+            if (modal) modal.classList.remove('hidden');
+        }
+
+        function closeNewTriageModal() {
+            const modal = document.getElementById('newTriageModal');
+            if (modal) modal.classList.add('hidden');
+            const form = document.getElementById('triageForm');
+            if (form) form.reset();
+        }
+
+        function saveNewTriage(e) {
+            e.preventDefault();
+            
+            const paciente = document.getElementById('formPaciente').value;
+            const dni = document.getElementById('formDni').value;
+            const hc = document.getElementById('formHc').value || `HC-00${Math.floor(1000 + Math.random() * 9000)}`;
+            const edad = document.getElementById('formEdad').value;
+            const sexo = document.getElementById('formSexo').value;
+            
+            const paSist = parseInt(document.getElementById('formPaSist').value);
+            const paDiast = parseInt(document.getElementById('formPaDiast').value);
+            const fc = parseInt(document.getElementById('formFc').value);
+            const fr = parseInt(document.getElementById('formFr').value);
+            const sat = parseInt(document.getElementById('formSat').value);
+            
+            const t = parseFloat(document.getElementById('formT').value);
+            const talla = parseInt(document.getElementById('formTalla').value) || 0;
+            const peso = parseFloat(document.getElementById('formPeso').value) || 0;
+            const glucosa = parseInt(document.getElementById('formGlucosa').value) || 0;
+            const motivo = document.getElementById('formMotivo').value || 'Atención en Urgencias';
+
+            const autoRiesgo = calculateTriagePriority(paSist, paDiast, fc, fr, sat, t, glucosa);
+            
+            const newRecord = {
+                id: Date.now(),
+                hc,
+                fecha: new Date().toISOString().split('T')[0],
+                hora: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                paciente,
+                dni,
+                edad,
+                sexo,
+                paSist,
+                paDiast,
+                fc,
+                fr,
+                sat,
+                t,
+                talla,
+                peso,
+                glucosa,
+                riesgo: autoRiesgo,
+                motivo
+            };
+
+            RAW_DATA.unshift(newRecord);
+            executeFilter();
+            closeNewTriageModal();
+            triggerToast(`Paciente ${paciente} clasificado: ${autoRiesgo.toUpperCase()}`, autoRiesgo === 'critico' ? 'danger' : 'success');
+        }
+
+        function openPatientDrawer(id) {
+            const patient = RAW_DATA.find(p => p.id === id);
+            if (!patient) return;
+            
+            currentSelectedPatient = patient;
+
+            document.getElementById('drawerPaciente').innerText = patient.paciente;
+            document.getElementById('drawerHc').innerText = patient.hc;
+            document.getElementById('drawerDni').innerText = patient.dni;
+            
+            document.getElementById('drawerPa').innerText = `${patient.paSist} / ${patient.paDiast} mmHg`;
+            document.getElementById('drawerFc').innerText = `${patient.fc} bpm`;
+            document.getElementById('drawerFr').innerText = `${patient.fr} rpm`;
+            document.getElementById('drawerSat').innerText = `${patient.sat} %`;
+            
+            document.getElementById('drawerT').innerText = `${patient.t} °C`;
+            document.getElementById('drawerGlucosa').innerText = patient.glucosa ? `${patient.glucosa} mg/dL` : 'No registrada';
+            
+            const imc = calculateIMC(patient.peso, patient.talla);
+            document.getElementById('drawerAntropometria').innerText = `${patient.talla || '--'} cm / ${patient.peso || '--'} Kg`;
+            document.getElementById('drawerImc').innerText = imc ? `IMC: ${imc} Kg/m²` : 'IMC: N/A';
+
+            document.getElementById('drawerMotivo').innerText = patient.motivo;
+
+            const alerts = evaluateClinicalAlerts(patient);
+            const alertsContainer = document.getElementById('drawerAlertsList');
+            if (alertsContainer) {
+                if (alerts.length > 0) {
+                    alertsContainer.innerHTML = alerts.map(a => `<span class="text-[9px] px-1.5 py-0.5 rounded border font-bold ${a.cls}">${a.text}</span>`).join('');
+                } else {
+                    alertsContainer.innerHTML = `<span class="text-[9px] text-emerald-600 font-bold">Sin alertas agudas</span>`;
+                }
+            }
+
+            const badgeContainer = document.getElementById('drawerBadgeContainer');
+            if (badgeContainer) {
+                badgeContainer.innerHTML = `<span class="px-3 py-1.5 rounded-xl text-xs font-black uppercase tracking-wider inline-block ${
+                    patient.riesgo === 'critico' ? 'bg-red-100 text-red-800 border border-red-300' :
+                    patient.riesgo === 'alto' ? 'bg-orange-100 text-orange-800 border border-orange-300' : 'bg-emerald-100 text-emerald-800 border border-emerald-300'
+                }">${patient.riesgo.toUpperCase()} - ATENCIÓN EN REGLA</span>`;
+            }
+
+            const drawer = document.getElementById('patientDrawer');
+            if (drawer) drawer.classList.remove('hidden');
+        }
+
+        function closePatientDrawer() {
+            const drawer = document.getElementById('patientDrawer');
+            if (drawer) drawer.classList.add('hidden');
+        }
+
+        function printTicket() {
+            if (!currentSelectedPatient) return;
+            triggerToast(`Imprimiendo Ticket Triaje para HC: ${currentSelectedPatient.hc}`, 'success');
+        }
+
+        function exportToCSV() {
+            let csvContent = "data:text/csv;charset=utf-8,Fecha,Hora,Paciente,DNI,HC,Edad,Sexo,PA_Sist,PA_Diast,FC,FR,SpO2,Temp,Glucosa,Riesgo\n";
+            filteredData.forEach(r => {
+                csvContent += `${r.fecha},${r.hora},"${r.paciente}",${r.dni},${r.hc},${r.edad},${r.sexo},${r.paSist},${r.paDiast},${r.fc},${r.fr},${r.sat},${r.t},${r.glucosa || ''},${r.riesgo}\n`;
+            });
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", `Triaje_SGH_${new Date().toISOString().split('T')[0]}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            triggerToast('Reporte CSV generado exitosamente', 'success');
+        }
+
+        function switchView(view) {
+            document.querySelectorAll('.view-section').forEach(v => v.classList.remove('active'));
+            const targetView = document.getElementById(`view-${view}`);
+            if (targetView) targetView.classList.add('active');
+            
+            document.querySelectorAll('.nav-label').forEach(el => {
+                const btn = el.parentElement;
+                btn.classList.remove('active-nav');
+                if (btn.id === `nav-${view}`) btn.classList.add('active-nav');
+            });
+
+            const titles = {
+                'dashboard': 'Dashboard Real-Time de Triaje',
+                'reporte': 'Reporte de Triaje General',
+                'estadisticas': 'Analítica Operativa de Guardia'
+            };
+            const titleEl = document.getElementById('viewTitle');
+            if (titleEl) titleEl.innerText = titles[view] || 'Triaje Hospital Ventanilla';
+        }
+
+        function initCharts() {
+            const flowCanvas = document.getElementById('flowChart');
+            if (flowCanvas && typeof Chart !== 'undefined') {
+                const ctxFlow = flowCanvas.getContext('2d');
+                flowChartInstance = new Chart(ctxFlow, {
+                    type: 'line',
+                    data: {
+                        labels: ['00:00', '04:00', '08:00', '12:00', '16:00', '20:00'],
+                        datasets: [{
+                            label: 'Pacientes/Hora',
+                            data: [12, 6, 48, 65, 42, 28],
+                            borderColor: '#1d4ed8',
+                            backgroundColor: 'rgba(29, 78, 216, 0.08)',
+                            fill: true,
+                            tension: 0.4,
+                            borderWidth: 2.5,
+                            pointBackgroundColor: '#1d4ed8',
+                            pointRadius: 3
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { display: false } },
+                        scales: {
+                            y: { grid: { color: '#f1f5f9' }, ticks: { font: { size: 9 } } },
+                            x: { grid: { display: false }, ticks: { font: { size: 9 } } }
+                        }
+                    }
+                });
+            }
+
+            const priorityCanvas = document.getElementById('priorityChart');
+            if (priorityCanvas && typeof Chart !== 'undefined') {
+                const ctxPriority = priorityCanvas.getContext('2d');
+                priorityChartInstance = new Chart(ctxPriority, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['P-IV Estable', 'P-III Moderado', 'P-II Urgencia', 'P-I Crítico'],
+                        datasets: [{
+                            data: [2, 1, 1, 1],
+                            backgroundColor: ['#10b981', '#eab308', '#f97316', '#ef4444'],
+                            borderWidth: 3,
+                            borderColor: '#ffffff'
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        cutout: '70%',
+                        plugins: {
+                            legend: {
+                                position: 'bottom',
+                                labels: { boxWidth: 8, usePointStyle: true, font: { size: 9, weight: 'bold' } }
+                            }
+                        }
+                    }
+                });
+            }
+        }
+
+        window.onload = function() {
+            renderTable();
+            initCharts();
+            updateStats();
+            const dateHeader = document.getElementById('currentDateHeader');
+            if (dateHeader) {
+                dateHeader.innerText = formatDate(new Date().toISOString().split('T')[0]);
+            }
+        };
+
+        let isCollapsed = false;
+
+        function toggleSidebar() {
+            const isMobile = window.innerWidth < 768;
+            const sidebar = document.getElementById('sidebar');
+            const sidebarBrand = document.getElementById('sidebarBrand');
+            const sidebarNav = document.getElementById('sidebarNav');
+            const sidebarUser = document.getElementById('sidebarUser');
+
+            if (isMobile) {
+                // Comportamiento de despliegue/ocultamiento vertical en Móviles
+                const isHidden = sidebarNav.classList.contains('hidden');
+                if (isHidden) {
+                    sidebarNav.classList.remove('hidden');
+                    sidebarUser.classList.remove('hidden');
+                } else {
+                    sidebarNav.classList.add('hidden');
+                    sidebarUser.classList.add('hidden');
+                }
+            } else {
+                // Comportamiento Colapsar/Expandir en Escritorio
+                isCollapsed = !isCollapsed;
+
+                if (sidebar) {
+                    if (isCollapsed) {
+                        sidebar.classList.remove('md:w-64');
+                        sidebar.classList.add('md:w-20');
+                    } else {
+                        sidebar.classList.remove('md:w-20');
+                        sidebar.classList.add('md:w-64');
+                    }
+                }
+
+                if (sidebarBrand) {
+                    sidebarBrand.classList.toggle('hidden', isCollapsed);
+                }
+
+                // Ocultar/Mostrar etiquetas de texto
+                document.querySelectorAll('.nav-label').forEach(el => {
+                    el.classList.toggle('hidden', isCollapsed);
+                });
+
+                document.querySelectorAll('.sidebar-label').forEach(el => {
+                    el.classList.toggle('hidden', isCollapsed);
+                });
+
+                // Centrar los íconos de los botones cuando esté colapsado
+                document.querySelectorAll('.nav-item').forEach(btn => {
+                    if (isCollapsed) {
+                        btn.classList.add('justify-center', 'px-2');
+                        btn.classList.remove('px-3.5');
+                    } else {
+                        btn.classList.remove('justify-center', 'px-2');
+                        btn.classList.add('px-3.5');
+                    }
+                });
+            }
+        }
+    </script>
+</body>
+</html>
