@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="es" class="h-full bg-slate-100">
 <head>
@@ -167,11 +168,9 @@
                 </div>
                 <div class="sidebar-label flex flex-col min-w-0">
                     <p class="text-xs font-bold text-slate-800 truncate">Dr. Guardia Triaje</p>
-                    <button onclick="openNodeConfigModal()" class="text-[10px] text-emerald-600 hover:text-brand-700 font-bold flex items-center gap-1 transition-colors text-left" title="Click para Configurar Conexión a Servidor HIS">
-                        <span id="nodeStatusPing" class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                        <span id="nodeIpLabel">Nodo: 172.18.26.18</span>
-                        <span class="text-[9px] bg-emerald-100 text-emerald-800 px-1 rounded font-extrabold ml-0.5">⚙️</span>
-                    </button>
+                    <p class="text-[10px] text-emerald-600 font-bold flex items-center gap-1">
+                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span> Nodo: 172.18.26.18
+                    </p>
                 </div>
             </div>
         </div>
@@ -583,72 +582,95 @@
 
     <!-- DRAWER: FICHA CLÍNICA DETALLADA -->
     <div id="patientDrawer" class="fixed inset-0 z-50 hidden bg-slate-900/40 backdrop-blur-xs flex justify-end">
-        <!-- ... existing content ... -->
-    </div>
-
-    <!-- MODAL: CONFIGURACIÓN DE NODO Y SERVIDORES HIS -->
-    <div id="nodeConfigModal" class="fixed inset-0 z-50 hidden bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
-        <div class="bg-white rounded-3xl max-w-lg w-full shadow-2xl overflow-hidden animate-fadeIn my-auto">
-            <div class="bg-slate-900 text-white px-6 py-4 flex items-center justify-between">
-                <div class="flex items-center gap-3">
-                    <span class="text-2xl">🌐</span>
+        <div class="w-full max-w-md bg-white h-full shadow-2xl flex flex-col justify-between animate-fadeIn">
+            <div>
+                <div class="p-5 bg-brand-800 text-white flex items-center justify-between">
                     <div>
-                        <h3 class="font-extrabold text-sm sm:text-base">Configuración de Nodo IP & Servidor HIS</h3>
-                        <p class="text-[11px] text-slate-400">Servidor de Base de Datos - Red Intranet Ventanilla</p>
+                        <span class="text-[10px] font-bold text-brand-200 uppercase tracking-widest">Expediente Clínico de Triaje</span>
+                        <h3 id="drawerPaciente" class="font-extrabold text-base leading-tight mt-0.5">---</h3>
                     </div>
-                </div>
-                <button onclick="closeNodeConfigModal()" class="text-slate-400 hover:text-white text-xl font-bold">✕</button>
-            </div>
-            
-            <form onsubmit="saveNodeConfig(event)" class="p-5 space-y-4">
-                <div>
-                    <label class="text-[10px] font-extrabold text-slate-500 uppercase block mb-1">Dirección IP del Nodo / Servidor *</label>
-                    <div class="flex gap-2">
-                        <input type="text" id="configIpInput" value="172.18.26.18" required pattern="^((25[0-5]|(2[0-4]|1\d|[1-9]|)\d)\.){3}(25[0-5]|(2[0-4]|1\d|[1-9]|)\d)$" placeholder="Ej: 172.18.26.18" class="filter-input flex-1 px-3 py-2 text-xs font-mono rounded-xl">
-                        <input type="number" id="configPortInput" value="8080" required placeholder="Puerto" class="filter-input w-24 px-3 py-2 text-xs font-mono rounded-xl">
-                    </div>
-                    <p class="text-[10px] text-slate-400 mt-1">✓ IP Clase B (172.18.x.x) - Estándar Red Intranet Salud Ventanilla / MINSA</p>
+                    <button onclick="closePatientDrawer()" class="text-slate-300 hover:text-white text-xl">✕</button>
                 </div>
 
-                <div>
-                    <label class="text-[10px] font-extrabold text-slate-500 uppercase block mb-1">Modo de Operación de Consultas</label>
-                    <select id="configModeSelect" onchange="toggleApiEndpointInput()" class="filter-input w-full px-3 py-2 text-xs font-semibold rounded-xl">
-                        <option value="simulated">Modo Híbrido / Simulación Local (Demo 100% Funcional)</option>
-                        <option value="real_api">Conexión Directa API REST / Servidor HIS Hospitalario</option>
-                    </select>
-                </div>
-
-                <div id="endpointContainer" class="hidden space-y-2.5">
-                    <div>
-                        <label class="text-[10px] font-extrabold text-slate-500 uppercase block mb-1">Endpoint API de Consulta de Triaje (Histórico)</label>
-                        <input type="text" id="configEndpointInput" value="/api/v1/triaje/consultas" placeholder="/api/v1/triaje/consultas" class="filter-input w-full px-3 py-2 text-xs font-mono rounded-xl">
-                    </div>
-                    <div>
-                        <label class="text-[10px] font-extrabold text-slate-500 uppercase block mb-1">Token de Autenticación Intranet / Key</label>
-                        <input type="password" id="configTokenInput" value="••••••••••••••••" placeholder="Token de integración" class="filter-input w-full px-3 py-2 text-xs font-mono rounded-xl">
-                    </div>
-                </div>
-
-                <div id="pingResultBox" class="p-3.5 bg-slate-50 border border-slate-200 rounded-2xl text-xs flex items-center justify-between">
-                    <div class="flex items-center gap-3">
-                        <span id="pingIcon" class="text-xl">🟢</span>
+                <div class="p-5 space-y-5 overflow-y-auto max-h-[calc(100vh-130px)] custom-scrollbar">
+                    
+                    <div class="flex items-center justify-between bg-slate-50 p-3.5 rounded-2xl border border-slate-200">
                         <div>
-                            <p class="font-extrabold text-slate-800 text-xs" id="pingStatusText">Nodo 172.18.26.18 Conectado</p>
-                            <p class="text-[10px] text-slate-500 font-mono" id="pingLatencyText">Respuesta: 12ms • HTTPS SSL OK • Viabilidad 100%</p>
+                            <p class="text-[9px] font-bold text-slate-400 uppercase">Historia Clínica</p>
+                            <p id="drawerHc" class="font-mono font-extrabold text-brand-700 text-sm">---</p>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-[9px] font-bold text-slate-400 uppercase">DNI / Documento</p>
+                            <p id="drawerDni" class="font-mono font-bold text-slate-800 text-xs">---</p>
                         </div>
                     </div>
-                    <button type="button" onclick="testNodeConnection()" class="bg-brand-50 hover:bg-brand-100 text-brand-700 border border-brand-200 px-3 py-1.5 rounded-xl text-[10px] font-extrabold transition-all">
-                        🔍 Probar Ping
-                    </button>
-                </div>
 
-                <div class="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
-                    <button type="button" onclick="closeNodeConfigModal()" class="px-4 py-2 rounded-xl text-xs font-bold text-slate-500 hover:bg-slate-100">Cancelar</button>
-                    <button type="submit" class="px-5 py-2 rounded-xl text-xs font-extrabold text-white bg-brand-700 hover:bg-brand-800 shadow-md uppercase tracking-wider">
-                        Guardar & Verificar Nodo
-                    </button>
+                    <div>
+                        <h4 class="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider mb-1.5">Categoría de Riesgo ESI</h4>
+                        <div id="drawerBadgeContainer"></div>
+                    </div>
+
+                    <div>
+                        <h4 class="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider mb-2">Signos Vitales Evaluados</h4>
+                        <div class="grid grid-cols-2 gap-2.5">
+                            <div class="p-2.5 bg-slate-50 rounded-xl border border-slate-200/80">
+                                <p class="text-[9px] text-slate-400 font-bold uppercase">Presión Arterial (PA)</p>
+                                <p id="drawerPa" class="text-xs font-extrabold text-slate-800 font-mono">-- / --</p>
+                            </div>
+                            <div class="p-2.5 bg-slate-50 rounded-xl border border-slate-200/80">
+                                <p class="text-[9px] text-slate-400 font-bold uppercase">Frec. Cardíaca (FC)</p>
+                                <p id="drawerFc" class="text-xs font-extrabold text-slate-800 font-mono">-- bpm</p>
+                            </div>
+                            <div class="p-2.5 bg-slate-50 rounded-xl border border-slate-200/80">
+                                <p class="text-[9px] text-slate-400 font-bold uppercase">Frec. Resp. (FR)</p>
+                                <p id="drawerFr" class="text-xs font-extrabold text-slate-800 font-mono">-- rpm</p>
+                            </div>
+                            <div class="p-2.5 bg-slate-50 rounded-xl border border-slate-200/80">
+                                <p class="text-[9px] text-slate-400 font-bold uppercase">Saturación (SpO2)</p>
+                                <p id="drawerSat" class="text-xs font-extrabold text-slate-800 font-mono">-- %</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <h4 class="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider mb-2">Adicionales & Biometría</h4>
+                        <div class="grid grid-cols-2 gap-2.5">
+                            <div class="p-2.5 bg-slate-50 rounded-xl border border-slate-200/80">
+                                <p class="text-[9px] text-slate-400 font-bold uppercase">Temperatura (T°)</p>
+                                <p id="drawerT" class="text-xs font-extrabold text-slate-800 font-mono">-- °C</p>
+                            </div>
+                            <div class="p-2.5 bg-slate-50 rounded-xl border border-slate-200/80">
+                                <p class="text-[9px] text-slate-400 font-bold uppercase">Glucosa / HGT</p>
+                                <p id="drawerGlucosa" class="text-xs font-extrabold text-slate-800 font-mono">-- mg/dL</p>
+                            </div>
+                            <div class="p-2.5 bg-slate-50 rounded-xl border border-slate-200/80">
+                                <p class="text-[9px] text-slate-400 font-bold uppercase">Antropometría</p>
+                                <p id="drawerAntropometria" class="text-xs font-extrabold text-slate-800">-- cm / -- Kg</p>
+                                <p id="drawerImc" class="text-[9px] font-bold text-brand-700 mt-0.5">IMC: --</p>
+                            </div>
+                            <div class="p-2.5 bg-slate-50 rounded-xl border border-slate-200/80">
+                                <p class="text-[9px] text-slate-400 font-bold uppercase">Alertas Detectadas</p>
+                                <div id="drawerAlertsList" class="flex flex-wrap gap-1 mt-1"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <h4 class="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider mb-1">Motivo de Consulta</h4>
+                        <p id="drawerMotivo" class="text-xs text-slate-700 bg-slate-50 p-3 rounded-xl border border-slate-200/80 italic leading-relaxed">No especificado</p>
+                    </div>
+
                 </div>
-            </form>
+            </div>
+
+            <div class="p-4 border-t border-slate-100 bg-slate-50 flex gap-2">
+                <button onclick="printTicket()" class="flex-1 bg-brand-800 hover:bg-brand-900 text-white py-2.5 rounded-xl text-xs font-extrabold transition-all uppercase tracking-wider">
+                    🖨️ Imprimir Ticket
+                </button>
+                <button onclick="closePatientDrawer()" class="px-4 bg-slate-200 hover:bg-slate-300 text-slate-700 py-2.5 rounded-xl text-xs font-bold transition-all">
+                    Cerrar
+                </button>
+            </div>
         </div>
     </div>
 
@@ -679,69 +701,6 @@
         let currentSelectedPatient = null;
         let flowChartInstance = null;
         let priorityChartInstance = null;
-
-        let nodeConfig = {
-            ip: '172.18.26.18',
-            port: '8080',
-            mode: 'simulated',
-            endpoint: '/api/v1/triaje/consultas',
-            status: 'online'
-        };
-
-        function openNodeConfigModal() {
-            document.getElementById('configIpInput').value = nodeConfig.ip;
-            document.getElementById('configPortInput').value = nodeConfig.port;
-            document.getElementById('configModeSelect').value = nodeConfig.mode;
-            document.getElementById('configEndpointInput').value = nodeConfig.endpoint;
-            toggleApiEndpointInput();
-            document.getElementById('nodeConfigModal').classList.remove('hidden');
-        }
-
-        function closeNodeConfigModal() {
-            document.getElementById('nodeConfigModal').classList.add('hidden');
-        }
-
-        function toggleApiEndpointInput() {
-            const mode = document.getElementById('configModeSelect').value;
-            const container = document.getElementById('endpointContainer');
-            if (mode === 'real_api') {
-                container.classList.remove('hidden');
-            } else {
-                container.classList.add('hidden');
-            }
-        }
-
-        function testNodeConnection() {
-            const statusText = document.getElementById('pingStatusText');
-            const latencyText = document.getElementById('pingLatencyText');
-            const pingIcon = document.getElementById('pingIcon');
-            const ip = document.getElementById('configIpInput').value;
-
-            pingIcon.innerText = '⏳';
-            statusText.innerText = 'Probando conexión con ' + ip + '...';
-
-            setTimeout(() => {
-                const ms = Math.floor(8 + Math.random() * 14);
-                pingIcon.innerText = '🟢';
-                statusText.innerText = `Nodo ${ip} Activo y Viable`;
-                latencyText.innerText = `IP: ${ip} • Latencia: ${ms}ms • HTTPS / REST Ready`;
-                triggerToast(`Conexión exitosa con el servidor ${ip}`, 'success');
-            }, 700);
-        }
-
-        function saveNodeConfig(e) {
-            e.preventDefault();
-            nodeConfig.ip = document.getElementById('configIpInput').value;
-            nodeConfig.port = document.getElementById('configPortInput').value;
-            nodeConfig.mode = document.getElementById('configModeSelect').value;
-            nodeConfig.endpoint = document.getElementById('configEndpointInput').value;
-
-            const label = document.getElementById('nodeIpLabel');
-            if (label) label.innerText = `Nodo: ${nodeConfig.ip}`;
-
-            closeNodeConfigModal();
-            triggerToast(`Configuración de IP ${nodeConfig.ip} guardada correctamente`, 'success');
-        }
 
         // Estado de Paginación
         let currentPage = 1;
