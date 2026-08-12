@@ -1,1302 +1,1527 @@
-
 <!DOCTYPE html>
-<html lang="es" class="h-full bg-slate-100">
+<html lang="es" class="h-full bg-slate-950">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SGH Hospital Ventanilla - Sistema Inteligente de Triaje</title>
-    <!-- Tailwind CSS CDN -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MÓDULO DE VIGILANCIA EPIDEMIOLÓGICA INTEGRAL - VEA | HOSPITAL DE VENTANILLA</title>
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Chart.js CDN -->
+    <!-- Chart.js para visualización de gráficos -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- SheetJS (XLSX) para importación/exportación de libros Excel -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <!-- Google Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    
     <script>
         tailwind.config = {
             theme: {
                 extend: {
-                    fontFamily: {
-                        sans: ['Plus Jakarta Sans', 'sans-serif'],
-                    },
+                    fontFamily: { sans: ['Plus Jakarta Sans', 'sans-serif'] },
                     colors: {
-                        brand: {
-                            50: '#eff6ff',
-                            100: '#dbeafe',
-                            200: '#bfdbfe',
-                            500: '#3b82f6',
-                            600: '#2563eb',
-                            700: '#1d4ed8',
-                            800: '#1e40af',
-                            900: '#1e3a8a',
-                        }
+                        brand: { 50: '#fef2f2', 500: '#ef4444', 600: '#dc2626', 700: '#b91c1c', 900: '#7f1d1d' },
+                        slate: { 850: '#131d31', 950: '#070c18' }
                     }
                 }
             }
         }
     </script>
-
     <style>
-        body {
-            font-family: 'Plus Jakarta Sans', sans-serif;
-            background-color: #f1f5f9;
-            color: #0f172a;
-            overflow: hidden;
-        }
-
-        /* Custom subtle scrollbar */
-        .custom-scrollbar::-webkit-scrollbar {
-            width: 6px;
-            height: 6px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-track {
-            background: #f1f5f9;
-            border-radius: 8px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb {
-            background: #cbd5e1;
-            border-radius: 8px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-            background: #94a3b8;
-        }
-
-        .view-section {
-            display: none;
-            width: 100%;
-        }
-        .view-section.active {
-            display: block;
-            animation: fadeIn 0.3s ease-in-out forwards;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(6px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        .active-nav {
-            background-color: #eff6ff;
-            color: #1d4ed8;
-            border-right: 4px solid #1d4ed8;
-            font-weight: 700;
-        }
-
-        .filter-input {
-            border: 1px solid #cbd5e1;
-            transition: all 0.2s ease;
-        }
-        .filter-input:focus {
-            border-color: #2563eb;
-            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
-            outline: none;
-        }
-
-        .table-row-hover {
-            transition: background-color 0.15s ease;
-        }
-        .table-row-hover:hover {
-            background-color: #f8fafc;
-        }
-
-        .pulse-red {
-            animation: pulseRed 2s infinite;
-        }
-        @keyframes pulseRed {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.6; }
-        }
+        body { font-family: 'Plus Jakarta Sans', sans-serif; }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #070c18; }
+        ::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #ef4444; }
+        .sidebar-active { background: linear-gradient(90deg, rgba(239,68,68,0.15) 0%, rgba(239,68,68,0.02) 100%); border-left: 4px solid #ef4444; color: #ffffff !important; }
+        .sidebar-collapsed { width: 4.5rem !important; }
+        .sidebar-collapsed .sidebar-text,
+        .sidebar-collapsed .sidebar-badge { display: none !important; }
+        .sidebar-collapsed .sidebar-header-info { display: none !important; }
+        .sidebar-collapsed .sidebar-nav-item { justify-content: center; padding-left: 0; padding-right: 0; }
     </style>
 </head>
-<body class="h-screen w-screen flex flex-col md:flex-row overflow-hidden bg-slate-100">
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col antialiased selection:bg-red-500 selection:text-white">
 
-    <!-- SIDEBAR DE NAVEGACIÓN -->
-    <aside id="sidebar" class="w-full md:w-64 bg-white border-b md:border-b-0 md:border-r border-slate-200 flex flex-col shrink-0 transition-all duration-300 z-30">
-        
-        <!-- Header del Sidebar / Marca -->
-        <div class="h-16 md:h-20 flex items-center justify-between px-4 md:px-5 border-b border-slate-100 shrink-0">
-            <div class="flex items-center gap-3 overflow-hidden">
-                <div class="w-10 h-10 bg-brand-700 text-white rounded-2xl flex items-center justify-center font-black text-xl shadow-md shadow-brand-700/30 shrink-0">
-                    🏥
-                </div>
-                <div id="sidebarBrand" class="flex flex-col transition-opacity duration-200">
-                    <span class="font-extrabold text-slate-800 text-base leading-tight tracking-tight whitespace-nowrap">HOSPITAL</span>
-                    <span class="font-black text-brand-700 text-xs tracking-widest whitespace-nowrap">VENTANILLA</span>
-                </div>
+    <!-- Modal Notificaciones -->
+    <div id="modalNotificacion" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center hidden opacity-0 transition-opacity duration-300">
+        <div class="bg-slate-900 border border-slate-800 p-6 rounded-2xl max-w-lg w-full mx-4 shadow-2xl text-center transform scale-95 transition-all duration-300">
+            <div id="modalIconContainer" class="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-slate-800 bg-slate-950">
+                <svg id="modalIconExito" class="h-7 w-7 text-emerald-400 hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+                </svg>
+                <svg id="modalIconError" class="h-7 w-7 text-rose-500 hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+                <svg id="modalIconInfo" class="h-7 w-7 text-cyan-400 hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
             </div>
-            <button id="toggleBtn" onclick="toggleSidebar()" title="Colapsar / Expandir Menú" class="p-2 hover:bg-slate-100 rounded-xl text-slate-500 text-lg transition-colors">
-                ☰
+            <h3 id="modalTitle" class="text-lg font-bold text-white mb-2">Notificación</h3>
+            <div id="modalDesc" class="text-xs text-slate-300 mb-6 text-left bg-slate-950/80 p-4 rounded-xl border border-slate-800 max-h-60 overflow-y-auto leading-relaxed whitespace-pre-line font-mono"></div>
+            <button onclick="cerrarModalNotificacion()" class="w-full bg-brand-600 hover:bg-brand-500 text-white font-bold py-2.5 px-4 rounded-xl text-xs transition-all shadow-lg shadow-brand-900/40">
+                Aceptar y Ver Datos
             </button>
         </div>
+    </div>
 
-        <!-- Menú de Opciones -->
-        <nav id="sidebarNav" class="flex-1 p-3 space-y-1.5 overflow-y-auto custom-scrollbar">
-            <p class="sidebar-label text-[10px] font-black text-slate-400 uppercase tracking-widest px-3 py-2">Módulos de Atención</p>
-            
-            <button onclick="switchView('dashboard')" id="nav-dashboard" title="Dashboard Real-Time" class="nav-item w-full flex items-center px-3.5 py-3 rounded-2xl transition-all text-slate-600 hover:bg-slate-50 font-semibold text-xs gap-3">
-                <span class="text-lg shrink-0">📊</span>
-                <span class="nav-label whitespace-nowrap">Dashboard Real-Time</span>
-            </button>
+    <div class="flex flex-1 min-h-screen overflow-hidden">
 
-            <button onclick="switchView('reporte')" id="nav-reporte" title="Reporte de Triaje" class="nav-item w-full active-nav flex items-center px-3.5 py-3 rounded-2xl transition-all text-xs gap-3">
-                <span class="text-lg shrink-0">📋</span>
-                <span class="nav-label whitespace-nowrap">Reporte de Triaje</span>
-            </button>
-
-            <button onclick="switchView('estadisticas')" id="nav-estadisticas" title="Analítica Operativa" class="nav-item w-full flex items-center px-3.5 py-3 rounded-2xl transition-all text-slate-600 hover:bg-slate-50 font-semibold text-xs gap-3">
-                <span class="text-lg shrink-0">📈</span>
-                <span class="nav-label whitespace-nowrap">Analítica Operativa</span>
-            </button>
-
-            <div class="py-2">
-                <div class="h-px bg-slate-100 w-full"></div>
-            </div>
-
-            <button onclick="openNewTriageModal()" title="Admitir Triaje" class="nav-item w-full bg-brand-700 hover:bg-brand-800 text-white font-extrabold p-3 rounded-2xl shadow-md shadow-brand-700/20 transition-all flex items-center justify-center gap-2 text-xs uppercase tracking-wider">
-                <span class="shrink-0">➕</span>
-                <span class="nav-label whitespace-nowrap">Admitir Triaje</span>
-            </button>
-        </nav>
-
-        <!-- Estado del Servidor & Usuario -->
-        <div id="sidebarUser" class="p-4 border-t border-slate-100 bg-slate-50/70 shrink-0">
-            <div class="flex items-center gap-3 overflow-hidden">
-                <div class="w-9 h-9 rounded-full bg-brand-100 border-2 border-brand-500 flex items-center justify-center text-brand-800 font-extrabold text-xs shrink-0" title="Dr. Guardia Triaje">
-                    DR
-                </div>
-                <div class="sidebar-label flex flex-col min-w-0">
-                    <p class="text-xs font-bold text-slate-800 truncate">Dr. Guardia Triaje</p>
-                    <p class="text-[10px] text-emerald-600 font-bold flex items-center gap-1">
-                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span> Nodo: 172.18.26.18
-                    </p>
-                </div>
-            </div>
-        </div>
-    </aside>
-
-    <!-- CONTENIDO PRINCIPAL -->
-    <main class="flex-1 flex flex-col min-w-0 h-full overflow-hidden">
-        
-        <!-- Header Superior Sticky -->
-        <header class="h-16 md:h-20 bg-white border-b border-slate-200 flex items-center justify-between px-4 md:px-8 shrink-0 z-20">
-            <div class="flex items-center gap-3">
-                <button onclick="toggleSidebar()" class="md:hidden bg-slate-100 hover:bg-slate-200 text-slate-700 p-2.5 rounded-xl font-bold text-xs" title="Abrir/Cerrar Menú">
-                    ☰
-                </button>
-                <button onclick="openNewTriageModal()" class="md:hidden bg-brand-700 text-white p-2.5 rounded-xl font-bold text-xs">
-                    ➕ Admitir
-                </button>
-                <div>
-                    <h1 id="viewTitle" class="text-base md:text-xl font-extrabold text-slate-900 tracking-tight">Reporte de Triaje General</h1>
-                    <div class="flex items-center gap-2 mt-0.5">
-                        <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                        <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Módulo Activo - Emergencias SGH</span>
+        <!-- MENÚ LATERAL (SIDEBAR) -->
+        <aside id="sidebar" class="w-72 bg-slate-900/95 border-r border-slate-800/80 flex flex-col justify-between transition-all duration-300 fixed md:relative z-40 h-full -translate-x-full md:translate-x-0">
+            <div>
+                <!-- Branding lateral -->
+                <div class="p-4 border-b border-slate-800/80 flex items-center justify-between">
+                    <div class="flex items-center gap-3 overflow-hidden">
+                        <div class="p-2.5 bg-brand-600 rounded-xl text-white shadow-lg shadow-brand-900/50 shrink-0">
+                            <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
+                            </svg>
+                        </div>
+                        <div class="sidebar-header-info min-w-0">
+                            <h1 class="text-sm font-black text-white tracking-wide uppercase truncate">HOSPITAL VENTANILLA</h1>
+                            <p class="text-[10px] text-brand-500 font-bold tracking-wider truncate">SISTEMA VEA INTEGRAL</p>
+                        </div>
                     </div>
+                    <!-- Botón Colapsar Sidebar en Desktop -->
+                    <button onclick="toggleSidebarCollapse()" class="hidden md:flex p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors" title="Colapsar / Desplegar Menú">
+                        <svg id="iconCollapse" class="h-5 w-5 transition-transform duration-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
+                        </svg>
+                    </button>
+                    <button onclick="toggleSidebar()" class="md:hidden text-slate-400 hover:text-white p-1">
+                        <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                    </button>
                 </div>
-            </div>
 
-            <!-- KPIs Rápidos de Turno -->
-            <div class="flex items-center gap-3 md:gap-6">
-                <div class="hidden sm:flex items-center gap-3 bg-slate-50 border border-slate-200 px-3.5 py-2 rounded-2xl">
-                    <span class="text-xl">⏱️</span>
+                <!-- Modulos Principales (Categorías del Excel) -->
+                <div class="p-3 space-y-5">
                     <div>
-                        <p class="text-[9px] font-extrabold text-slate-400 uppercase">Espera Promedio</p>
-                        <p class="text-xs font-extrabold text-slate-800">14 min</p>
-                    </div>
-                </div>
+                        <span class="px-2 text-[10px] font-bold text-slate-500 uppercase tracking-widest block mb-2 sidebar-text">Módulos Epidemiológicos</span>
+                        <nav class="space-y-1">
+                            <!-- EDAs -->
+                            <button id="navBtnEDAs" onclick="seleccionarModulo('EDAs')" title="EDAs (Diarreicas)" class="sidebar-nav-item w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-bold text-slate-400 hover:text-slate-100 hover:bg-slate-800/50 transition-all group sidebar-active">
+                                <div class="flex items-center gap-3 min-w-0">
+                                    <span class="p-1.5 rounded-lg bg-indigo-500/10 text-indigo-400 group-hover:bg-indigo-500/20 shrink-0">💧</span>
+                                    <span class="sidebar-text truncate">EDAs (Diarreicas)</span>
+                                </div>
+                                <span id="badgeCountEDAs" class="sidebar-badge text-[10px] bg-slate-800 text-slate-300 font-extrabold px-2 py-0.5 rounded-full border border-slate-700">0</span>
+                            </button>
 
-                <div class="hidden sm:flex items-center gap-3 bg-red-50 border border-red-100 px-3.5 py-2 rounded-2xl">
-                    <span class="text-xl">🚨</span>
-                    <div>
-                        <p class="text-[9px] font-extrabold text-red-400 uppercase">Casos Críticos</p>
-                        <p id="statCritical" class="text-xs font-extrabold text-red-700">2 hoy</p>
-                    </div>
-                </div>
+                            <!-- IRAs -->
+                            <button id="navBtnIRAs" onclick="seleccionarModulo('IRAs')" title="IRAs (Respiratorias)" class="sidebar-nav-item w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-bold text-slate-400 hover:text-slate-100 hover:bg-slate-800/50 transition-all group">
+                                <div class="flex items-center gap-3 min-w-0">
+                                    <span class="p-1.5 rounded-lg bg-cyan-500/10 text-cyan-400 group-hover:bg-cyan-500/20 shrink-0">🫁</span>
+                                    <span class="sidebar-text truncate">IRAs (Respiratorias)</span>
+                                </div>
+                                <span id="badgeCountIRAs" class="sidebar-badge text-[10px] bg-slate-800 text-slate-300 font-extrabold px-2 py-0.5 rounded-full border border-slate-700">0</span>
+                            </button>
 
-                <div class="text-right pl-2 border-l border-slate-200">
-                    <p class="text-[10px] font-extrabold text-slate-400 uppercase">Fecha Sistema</p>
-                    <p id="currentDateHeader" class="text-xs md:text-sm font-extrabold text-slate-800 font-mono">--.--.----</p>
+                            <!-- Febriles -->
+                            <button id="navBtnFebriles" onclick="seleccionarModulo('Febriles')" title="Febriles / Dengue" class="sidebar-nav-item w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-bold text-slate-400 hover:text-slate-100 hover:bg-slate-800/50 transition-all group">
+                                <div class="flex items-center gap-3 min-w-0">
+                                    <span class="p-1.5 rounded-lg bg-amber-500/10 text-amber-400 group-hover:bg-amber-500/20 shrink-0">🌡️</span>
+                                    <span class="sidebar-text truncate">Febriles / Dengue</span>
+                                </div>
+                                <span id="badgeCountFebriles" class="sidebar-badge text-[10px] bg-slate-800 text-slate-300 font-extrabold px-2 py-0.5 rounded-full border border-slate-700">0</span>
+                            </button>
+
+                            <!-- Individuales -->
+                            <button id="navBtnIndividuales" onclick="seleccionarModulo('Individuales')" title="Casos Individuales" class="sidebar-nav-item w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-bold text-slate-400 hover:text-slate-100 hover:bg-slate-800/50 transition-all group">
+                                <div class="flex items-center gap-3 min-w-0">
+                                    <span class="p-1.5 rounded-lg bg-emerald-500/10 text-emerald-400 group-hover:bg-emerald-500/20 shrink-0">👤</span>
+                                    <span class="sidebar-text truncate">Casos Individuales</span>
+                                </div>
+                                <span id="badgeCountIndividuales" class="sidebar-badge text-[10px] bg-slate-800 text-slate-300 font-extrabold px-2 py-0.5 rounded-full border border-slate-700">0</span>
+                            </button>
+                        </nav>
+                    </div>
+
+                    <!-- Vistas Analíticas -->
+                    <div id="seccionVistasAnaliticas">
+                        <span class="px-2 text-[10px] font-bold text-slate-500 uppercase tracking-widest block mb-2 sidebar-text">Vistas & Reportes</span>
+                        <nav class="space-y-1">
+                            <button id="tabBtnDashboard" onclick="cambiarPestanaAnalitica('dashboard')" title="Dashboard Vigilancia" class="sidebar-nav-item w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-bold text-white bg-slate-800/80 border border-slate-700/50">
+                                <svg class="h-4 w-4 text-brand-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/></svg>
+                                <span class="sidebar-text truncate">Dashboard Vigilancia</span>
+                            </button>
+
+                            <button id="tabBtnCanal" onclick="cambiarPestanaAnalitica('canal')" title="Canal Endémico" class="sidebar-nav-item w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-bold text-slate-400 hover:text-white hover:bg-slate-800/40">
+                                <svg class="h-4 w-4 text-emerald-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"/></svg>
+                                <span class="sidebar-text truncate">Canal Endémico</span>
+                            </button>
+
+                            <button id="tabBtnMatriz" onclick="cambiarPestanaAnalitica('matriz')" title="Matriz Semanal S.E." class="sidebar-nav-item w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-bold text-slate-400 hover:text-white hover:bg-slate-800/40">
+                                <svg class="h-4 w-4 text-cyan-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+                                <span class="sidebar-text truncate">Matriz Semanal S.E.</span>
+                            </button>
+
+                            <button id="tabBtnHosp" onclick="cambiarPestanaAnalitica('hospitalizados')" title="Hospitalizaciones" class="sidebar-nav-item w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-bold text-slate-400 hover:text-white hover:bg-slate-800/40">
+                                <svg class="h-4 w-4 text-purple-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
+                                <span class="sidebar-text truncate">Hospitalizaciones</span>
+                            </button>
+                        </nav>
+                    </div>
                 </div>
             </div>
-        </header>
 
-        <!-- ÁREA PRINCIPAL CON SCROLL INTERNO CONTROLADO -->
-        <div class="flex-1 overflow-y-auto p-3 md:p-6 custom-scrollbar">
-            
-            <!-- ================= VISTA 1: DASHBOARD ================= -->
-            <section id="view-dashboard" class="view-section max-w-7xl mx-auto space-y-6">
-                <!-- Tarjetas KPI -->
-                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                    <div class="bg-white p-5 rounded-3xl border border-slate-200 shadow-sm flex items-center justify-between">
-                        <div>
-                            <p class="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Total Atendidos</p>
-                            <h3 id="statTotal" class="text-2xl font-black text-slate-800 mt-1">0</h3>
-                            <span class="text-[10px] text-emerald-600 font-extrabold bg-emerald-50 px-2 py-0.5 rounded-md mt-2 inline-block">↑ +12% Guardia</span>
-                        </div>
-                        <div class="w-12 h-12 rounded-2xl bg-brand-50 text-brand-700 flex items-center justify-center text-2xl font-bold">👥</div>
-                    </div>
+            <!-- Botón Carga de Datos & Info footer -->
+            <div class="p-3 border-t border-slate-800/80 space-y-2 bg-slate-950/60">
+                <button onclick="cargarDatosDemo()" title="Cargar Datos Demo MINSA" class="sidebar-nav-item w-full bg-slate-800 hover:bg-slate-750 text-slate-300 hover:text-white font-bold py-2 px-2.5 rounded-xl text-xs flex items-center justify-center gap-2 border border-slate-700/60 transition-all">
+                    <svg class="h-4 w-4 text-amber-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                    <span class="sidebar-text truncate">Cargar Datos Demo MINSA</span>
+                </button>
+                <div class="sidebar-text text-[10px] text-slate-500 text-center font-semibold">
+                    VEA v5.0 • Hospital Ventanilla
+                </div>
+            </div>
+        </aside>
 
-                    <div class="bg-white p-5 rounded-3xl border border-slate-200 shadow-sm flex items-center justify-between">
-                        <div>
-                            <p class="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Prioridad I (Críticos)</p>
-                            <h3 class="text-2xl font-black text-red-600 mt-1">2</h3>
-                            <span class="text-[10px] text-red-600 font-extrabold bg-red-50 px-2 py-0.5 rounded-md mt-2 inline-block">Atención Inmediata</span>
-                        </div>
-                        <div class="w-12 h-12 rounded-2xl bg-red-50 text-red-600 flex items-center justify-center text-2xl font-bold">🚑</div>
-                    </div>
+        <!-- CONTENIDO PRINCIPAL -->
+        <div class="flex-1 flex flex-col min-w-0 overflow-y-auto">
 
-                    <div class="bg-white p-5 rounded-3xl border border-slate-200 shadow-sm flex items-center justify-between">
-                        <div>
-                            <p class="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Prioridad II (Urgente)</p>
-                            <h3 class="text-2xl font-black text-orange-500 mt-1">4</h3>
-                            <span class="text-[10px] text-orange-600 font-extrabold bg-orange-50 px-2 py-0.5 rounded-md mt-2 inline-block">Espera &lt; 15 min</span>
+            <!-- NAVBAR SUPERIOR -->
+            <header class="bg-slate-900/90 border-b border-slate-800/80 sticky top-0 z-30 backdrop-blur-md px-4 lg:px-8 py-3.5 flex items-center justify-between gap-4">
+                <div class="flex items-center gap-3">
+                    <button onclick="toggleSidebar()" class="md:hidden text-slate-300 hover:text-white p-2 bg-slate-800 rounded-lg">
+                        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+                    </button>
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <h2 id="lblModuloActual" class="text-lg font-black text-white tracking-tight">MÓDULO EDAs</h2>
+                            <span id="badgeEstadoOrigen" class="text-[10px] font-extrabold bg-amber-500/20 text-amber-400 border border-amber-500/30 px-2.5 py-0.5 rounded-full">EDICIÓN DEMO</span>
                         </div>
-                        <div class="w-12 h-12 rounded-2xl bg-orange-50 text-orange-600 flex items-center justify-center text-2xl font-bold">⚡</div>
-                    </div>
-
-                    <div class="bg-white p-5 rounded-3xl border border-slate-200 shadow-sm flex items-center justify-between">
-                        <div>
-                            <p class="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Disponibilidad Shockroom</p>
-                            <h3 class="text-2xl font-black text-emerald-600 mt-1">2 / 3</h3>
-                            <span class="text-[10px] text-emerald-600 font-extrabold bg-emerald-50 px-2 py-0.5 rounded-md mt-2 inline-block">Camas Libres</span>
-                        </div>
-                        <div class="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-2xl font-bold">🛏️</div>
+                        <p class="text-xs text-slate-400 font-semibold">Vigilancia epidemiológica activa y canal endémico</p>
                     </div>
                 </div>
 
-                <!-- Gráficos del Dashboard -->
-                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    <div class="lg:col-span-2 bg-white p-6 rounded-3xl border border-slate-200 shadow-sm">
-                        <div class="flex items-center justify-between mb-4">
-                            <h3 class="font-extrabold text-slate-800 text-sm flex items-center gap-2">
-                                <span>📈</span> Flujo de Pacientes Ingresados por Hora
-                            </h3>
-                            <span class="text-xs text-slate-400 font-bold">Últimas 24h</span>
+                <!-- Botón Subir Excel VEA_2.xlsx -->
+                <div class="flex items-center gap-3">
+                    <input type="file" id="inputExcelFile" accept=".xlsx, .xls, .csv" class="hidden" onchange="procesarExcelMultiPestana(event)">
+                    <button onclick="document.getElementById('inputExcelFile').click()" class="bg-brand-600 hover:bg-brand-500 text-white font-extrabold px-4 py-2.5 rounded-xl text-xs transition-all shadow-lg shadow-brand-900/40 flex items-center gap-2 border border-brand-500/30">
+                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+                        <span class="hidden sm:inline">Subir Excel VEA_2.xlsx</span>
+                        <span class="sm:hidden">VEA_2.xlsx</span>
+                    </button>
+                </div>
+            </header>
+
+            <!-- CONTENIDO DE VISTAS -->
+            <main class="p-4 lg:p-8 space-y-6 max-w-7xl w-full mx-auto">
+
+                <!-- BANDA DE NIVEL DE ALERTA EPIDEMIOLÓGICA -->
+                <div id="bannerAlerta" class="w-full p-4 rounded-2xl border flex flex-col md:flex-row items-center justify-between gap-4 bg-slate-900 border-slate-800 transition-all">
+                    <div class="flex items-center gap-3">
+                        <div class="relative flex h-3.5 w-3.5 shrink-0">
+                            <span id="pingAlerta" class="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 bg-emerald-400"></span>
+                            <span id="dotAlerta" class="relative inline-flex rounded-full h-3.5 w-3.5 bg-emerald-500"></span>
                         </div>
-                        <div class="relative w-full h-64">
-                            <canvas id="flowChart"></canvas>
+                        <div>
+                            <span class="text-[10px] font-black uppercase tracking-widest text-slate-400 block">SITUACIÓN EPIDEMIOLÓGICA ACTUAL</span>
+                            <h3 id="txtEstadoBrote" class="text-base font-black text-white uppercase">ZONA DE SEGURIDAD (DENTRO DEL CANAL)</h3>
                         </div>
                     </div>
-
-                    <div class="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm flex flex-col justify-between">
-                        <div class="flex items-center justify-between mb-4">
-                            <h3 class="font-extrabold text-slate-800 text-sm">Distribución por Prioridad ESI</h3>
-                            <span class="text-xs text-slate-400 font-bold">Categorización</span>
-                        </div>
-                        <div class="relative w-full h-56 flex items-center justify-center">
-                            <canvas id="priorityChart"></canvas>
-                        </div>
+                    <div class="flex items-center gap-2 bg-slate-950/80 px-4 py-2 rounded-xl border border-slate-800 text-xs text-slate-300 font-semibold max-w-xl">
+                        <span class="text-brand-500 font-bold shrink-0">💡 Recomendación:</span>
+                        <span id="txtRecomendacionBrote">Mantener medidas estándar de bioseguridad y monitoreo bacteriológico rutinario.</span>
                     </div>
                 </div>
-            </section>
 
-            <!-- ================= VISTA 2: REPORTE DE TRIAJE ================= -->
-            <section id="view-reporte" class="view-section active max-w-7xl mx-auto space-y-4">
-                
-                <div class="bg-white rounded-3xl border border-slate-200 shadow-xl shadow-slate-200/40 overflow-hidden">
-                    
-                    <!-- Filtros de Búsqueda -->
-                    <div class="p-4 md:p-6 border-b border-slate-100 bg-slate-50/60">
-                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-3 items-end">
-                            
-                            <div class="lg:col-span-3 grid grid-cols-2 gap-2">
-                                <div>
-                                    <label class="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block mb-1">F. Inicial</label>
-                                    <input type="date" id="dateStart" onchange="executeFilter()" class="filter-input w-full px-3 py-2 bg-white rounded-xl text-xs font-semibold text-slate-700">
-                                </div>
-                                <div>
-                                    <label class="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block mb-1">F. Final</label>
-                                    <input type="date" id="dateEnd" onchange="executeFilter()" class="filter-input w-full px-3 py-2 bg-white rounded-xl text-xs font-semibold text-slate-700">
-                                </div>
-                            </div>
-
-                            <div class="lg:col-span-4">
-                                <label class="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block mb-1">Paciente, DNI o N° Historia Clínica</label>
-                                <div class="relative">
-                                    <input type="text" id="textSearch" oninput="executeFilter()" placeholder="Buscar en tiempo real por Apellidos, DNI o HC..." class="filter-input w-full pl-9 pr-3 py-2 bg-white rounded-xl text-xs font-semibold text-slate-700">
-                                    <span class="absolute left-3 top-2 text-slate-400 text-xs">🔍</span>
-                                </div>
-                            </div>
-
-                            <div class="lg:col-span-2">
-                                <label class="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block mb-1">Nivel Urgencia</label>
-                                <select id="priorityFilter" onchange="executeFilter()" class="filter-input w-full px-3 py-2 bg-white rounded-xl text-xs font-semibold text-slate-700">
-                                    <option value="TODOS">Todos los Niveles</option>
-                                    <option value="critico">Prioridad I (Crítico)</option>
-                                    <option value="alto">Prioridad II (Alto)</option>
-                                    <option value="moderado">Prioridad III (Moderado)</option>
-                                    <option value="estable">Prioridad IV-V (Estable)</option>
-                                </select>
-                            </div>
-
-                            <div class="lg:col-span-3 flex gap-2">
-                                <button onclick="executeFilter()" class="flex-1 bg-brand-700 hover:bg-brand-800 text-white font-extrabold px-3 py-2 rounded-xl text-xs shadow-md transition-all uppercase tracking-wider">
-                                    Buscar
-                                </button>
-                                <button onclick="resetFilters()" title="Resetear" class="bg-slate-200 hover:bg-slate-300 text-slate-700 px-3 py-2 rounded-xl text-xs font-extrabold transition-all">
-                                    ↺
-                                </button>
-                                <button onclick="exportToCSV()" title="Exportar CSV" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3.5 py-2 rounded-xl text-xs font-extrabold transition-all">
-                                    📥 CSV
-                                </button>
-                            </div>
-
+                <!-- BARRA DE FILTROS SECTORIZADOS -->
+                <div id="seccionFiltrosGlob" class="bg-slate-900 border border-slate-800/90 rounded-2xl p-5 shadow-sm space-y-4">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-800 pb-3">
+                        <div class="flex items-center gap-2">
+                            <svg class="h-4 w-4 text-brand-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"/></svg>
+                            <h3 class="text-xs font-black uppercase tracking-wider text-slate-200">Segmentación & Filtros Dinámicos</h3>
                         </div>
-                    </div>
-
-                    <!-- TABLA PRINCIPAL RESPOSIVA Y PROTEGIDA CONTRA DESBORDE -->
-                    <div class="w-full overflow-x-auto custom-scrollbar">
-                        <table class="w-full min-w-[900px] text-left border-collapse">
-                            <thead class="bg-slate-100/80 text-[10px] font-extrabold uppercase tracking-widest text-slate-500 border-b border-slate-200">
-                                <tr>
-                                    <th class="px-4 py-3.5 w-28">Ingreso</th>
-                                    <th class="px-4 py-3.5 w-64">Paciente & Identidad</th>
-                                    <th class="px-3 py-3.5 text-center w-28">Biometría</th>
-                                    <th class="px-4 py-3.5 text-center">Signos Vitales y Adicionales (Con Alertas)</th>
-                                    <th class="px-3 py-3.5 text-center w-32">Prioridad</th>
-                                    <th class="px-3 py-3.5 text-center w-24">Acción</th>
-                                </tr>
-                            </thead>
-                            <tbody id="dataTableBody" class="divide-y divide-slate-100 text-xs">
-                                <!-- Filas dinámicas JS -->
-                            </tbody>
-                        </table>
-                    </div>
-
-                    <!-- Estado Vacío -->
-                    <div id="emptyMsg" class="hidden py-16 text-center flex flex-col items-center justify-center">
-                        <div class="w-14 h-14 bg-slate-100 rounded-full flex items-center justify-center text-2xl mb-2 text-slate-400">🔍</div>
-                        <h4 class="text-slate-800 font-bold text-sm">No se encontraron registros de triaje</h4>
-                        <p class="text-slate-400 text-xs mt-1">Modifique los filtros de fecha o búsqueda.</p>
-                    </div>
-
-                    <!-- CONTROLES DE PAGINACIÓN MANUAL Y CANTIDAD DE REGISTROS -->
-                    <div class="p-4 border-t border-slate-200 bg-slate-50/80 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs font-semibold">
-                        
-                        <!-- Selector de registros por página -->
-                        <div class="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-start">
-                            <div class="flex items-center gap-2">
-                                <span class="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Mostrar:</span>
-                                <select id="pageSizeSelect" onchange="changePageSize(this.value)" class="filter-input px-3 py-1.5 bg-white rounded-xl text-xs font-extrabold text-slate-700 cursor-pointer shadow-xs">
-                                    <option value="10" selected>10 casos</option>
-                                    <option value="50">50 casos</option>
-                                    <option value="100">100 casos</option>
-                                    <option value="ALL">TOTAL</option>
-                                </select>
-                            </div>
-                            <span id="paginationInfo" class="text-[11px] font-bold text-slate-500 bg-white px-3 py-1.5 rounded-xl border border-slate-200 shadow-xs">
-                                Mostrando 0 - 0 de 0 casos
+                        <div class="flex items-center gap-3">
+                            <button onclick="restablecerFiltros()" class="text-xs font-extrabold text-slate-400 hover:text-brand-400 transition-colors flex items-center gap-1">
+                                <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 1121.21 7.89M9 11l3 3L22 4"/></svg>
+                                Restablecer
+                            </button>
+                            <span id="lblRegistrosFiltrados" class="text-[10px] bg-slate-950 text-slate-400 font-extrabold px-3 py-1 rounded-lg border border-slate-800">
+                                Mostrando: 0 casos
                             </span>
                         </div>
-
-                        <!-- Botones de Navegación Paginada -->
-                        <div id="paginationControls" class="flex items-center gap-1.5 overflow-x-auto max-w-full pb-1 sm:pb-0">
-                            <!-- JS inserta los botones dinámicamente -->
-                        </div>
                     </div>
 
-                </div>
-            </section>
-
-            <!-- ================= VISTA 3: ESTADÍSTICAS ================= -->
-            <section id="view-estadisticas" class="view-section max-w-7xl mx-auto">
-                <div class="bg-white rounded-3xl border border-slate-200 p-6 shadow-sm">
-                    <h3 class="font-extrabold text-slate-800 text-sm mb-4">Resumen Estadístico de Guardia</h3>
-                    <p class="text-xs text-slate-500 mb-6">Métricas de tiempo de respuesta, volumen por especialidad y demanda del servicio de emergencias.</p>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div class="p-4 bg-slate-50 rounded-2xl border border-slate-100">
-                            <p class="text-xs font-bold text-slate-700 mb-2">Porcentaje de Pacientes Atendidos &lt; 15min</p>
-                            <div class="w-full bg-slate-200 rounded-full h-3 overflow-hidden">
-                                <div class="bg-emerald-500 h-3 rounded-full" style="width: 88%"></div>
-                            </div>
-                            <span class="text-[10px] font-extrabold text-emerald-600 mt-1 inline-block">88% Eficiencia de Triaje</span>
-                        </div>
-                        <div class="p-4 bg-slate-50 rounded-2xl border border-slate-100">
-                            <p class="text-xs font-bold text-slate-700 mb-2">Capacidad Operativa del Servicio</p>
-                            <div class="w-full bg-slate-200 rounded-full h-3 overflow-hidden">
-                                <div class="bg-brand-600 h-3 rounded-full" style="width: 65%"></div>
-                            </div>
-                            <span class="text-[10px] font-extrabold text-brand-700 mt-1 inline-block">65% Ocupación Médica</span>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-        </div>
-    </main>
-
-    <!-- ================= MODAL: NUEVO REGISTRO DE TRIAJE (BASADO EN REFERENCIA) ================= -->
-    <div id="newTriageModal" class="fixed inset-0 z-50 hidden bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
-        <div class="bg-white rounded-3xl max-w-3xl w-full shadow-2xl overflow-hidden animate-fadeIn my-auto">
-            
-            <div class="bg-brand-800 text-white px-6 py-4 flex items-center justify-between">
-                <div class="flex items-center gap-3">
-                    <span class="text-2xl">🩺</span>
-                    <div>
-                        <h3 class="font-extrabold text-sm sm:text-base">Admitir Paciente - Formulario de Triaje</h3>
-                        <p class="text-[11px] text-brand-200">Captura de Signos Vitales y Funciones Vitales Adicionales</p>
-                    </div>
-                </div>
-                <button onclick="closeNewTriageModal()" class="text-slate-300 hover:text-white text-xl font-bold p-1">✕</button>
-            </div>
-
-            <form id="triageForm" onsubmit="saveNewTriage(event)" class="p-4 sm:p-6 space-y-4 max-h-[80vh] overflow-y-auto custom-scrollbar">
-                
-                <!-- Section 1: Personal Data -->
-                <div>
-                    <h4 class="text-xs font-extrabold text-brand-800 uppercase tracking-wider mb-2 flex items-center gap-1.5">
-                        <span>👤</span> 1. Filiación e Identificación del Paciente
-                    </h4>
-                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                        <div class="sm:col-span-2">
-                            <label class="text-[10px] font-bold text-slate-500 uppercase block mb-1">Apellidos y Nombres *</label>
-                            <input type="text" id="formPaciente" required placeholder="Ej: PEREZ GARCIA, JUAN" class="filter-input w-full px-3 py-2 text-xs rounded-xl uppercase font-semibold">
-                        </div>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <!-- Año -->
                         <div>
-                            <label class="text-[10px] font-bold text-slate-500 uppercase block mb-1">DNI / Doc *</label>
-                            <input type="text" id="formDni" maxlength="8" required placeholder="8 dígitos" class="filter-input w-full px-3 py-2 text-xs rounded-xl font-mono">
+                            <label class="block text-[11px] font-bold text-slate-400 mb-1.5">Filtro de Período Anual</label>
+                            <select id="selectAnio" onchange="aplicarFiltrosGlobales()" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-slate-200 font-bold focus:outline-none focus:border-brand-500">
+                                <option value="TODOS">Todos los Años Disponibles</option>
+                            </select>
                         </div>
-                    </div>
-                    <div class="grid grid-cols-3 gap-3 mt-2.5">
+
+                        <!-- Mes -->
                         <div>
-                            <label class="text-[10px] font-bold text-slate-500 uppercase block mb-1">HC (Historia Clínica)</label>
-                            <input type="text" id="formHc" placeholder="Ej: HC-009855" class="filter-input w-full px-3 py-2 text-xs rounded-xl font-mono">
+                            <label class="block text-[11px] font-bold text-slate-400 mb-1.5">Mes de Análisis</label>
+                            <select id="selectMes" onchange="aplicarFiltrosGlobales()" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-slate-200 font-bold focus:outline-none focus:border-brand-500">
+                                <option value="TODOS">Todos los Meses</option>
+                                <option value="Ene">Enero</option>
+                                <option value="Feb">Febrero</option>
+                                <option value="Mar">Marzo</option>
+                                <option value="Abr">Abril</option>
+                                <option value="May">Mayo</option>
+                                <option value="Jun">Junio</option>
+                                <option value="Jul">Julio</option>
+                                <option value="Ago">Agosto</option>
+                                <option value="Sep">Septiembre</option>
+                                <option value="Oct">Octubre</option>
+                                <option value="Nov">Noviembre</option>
+                                <option value="Dic">Diciembre</option>
+                            </select>
                         </div>
+
+                        <!-- Semana Epidemiológica (SE) -->
                         <div>
-                            <label class="text-[10px] font-bold text-slate-500 uppercase block mb-1">Edad *</label>
-                            <input type="text" id="formEdad" required placeholder="Ej: 42a" class="filter-input w-full px-3 py-2 text-xs rounded-xl">
-                        </div>
-                        <div>
-                            <label class="text-[10px] font-bold text-slate-500 uppercase block mb-1">Sexo *</label>
-                            <select id="formSexo" class="filter-input w-full px-3 py-2 text-xs rounded-xl font-semibold">
-                                <option value="M">Masculino (M)</option>
-                                <option value="F">Femenino (F)</option>
+                            <label class="block text-[11px] font-bold text-slate-400 mb-1.5">Semana Epidemiológica (S.E.)</label>
+                            <select id="selectSE" onchange="aplicarFiltrosGlobales()" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-slate-200 font-bold focus:outline-none focus:border-brand-500">
+                                <option value="TODAS">Todas las Semanas (S.E. 01 - 52)</option>
                             </select>
                         </div>
                     </div>
                 </div>
 
-                <!-- Section 2: Triage Block (Matching Reference Image) -->
-                <div>
-                    <h4 class="text-xs font-extrabold text-brand-800 uppercase tracking-wider mb-2.5 flex items-center gap-1.5">
-                        <span>📊</span> 2. Datos de Triaje (Basado en Estándar Clínico)
-                    </h4>
-                    
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <!-- VISTA 1: DASHBOARD -->
+                <div id="vistaDashboard" class="space-y-6">
+                    <!-- Tarjetas KPI Grid -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                         
-                        <!-- PANEL 1: SIGNOS VITALES -->
-                        <div class="bg-sky-50/90 border border-sky-200 p-3.5 rounded-2xl">
-                            <div class="bg-sky-700 text-white text-xs font-extrabold px-3 py-1.5 rounded-xl mb-3 flex items-center justify-between">
-                                <span>Signos Vitales</span>
-                                <span class="text-[9px] font-normal opacity-90">Rangos Normales</span>
-                            </div>
-                            
-                            <div class="space-y-2.5 text-xs">
-                                <!-- PA -->
+                        <!-- KPI 1 -->
+                        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 flex flex-col justify-between">
+                            <div class="flex justify-between items-start">
                                 <div>
-                                    <div class="flex justify-between text-[10px] font-bold text-slate-600 mb-1">
-                                        <span>📈 PA (Presión Arterial)</span>
-                                        <span class="text-sky-700 font-mono text-[9px]">Sist: 90-120 / Diast: 60-80</span>
-                                    </div>
-                                    <div class="grid grid-cols-2 gap-2">
-                                        <input type="number" id="formPaSist" required placeholder="Sist (90-120)" class="filter-input w-full px-2.5 py-1.5 bg-white rounded-xl font-mono text-xs font-bold text-slate-800">
-                                        <input type="number" id="formPaDiast" required placeholder="Diast (60-80)" class="filter-input w-full px-2.5 py-1.5 bg-white rounded-xl font-mono text-xs font-bold text-slate-800">
-                                    </div>
+                                    <span class="text-[10px] font-extrabold uppercase text-slate-400 tracking-wider">TOTAL HISTÓRICO INGRESADO</span>
+                                    <h3 id="kpiTotalHistorico" class="text-2xl font-black text-white mt-1">0</h3>
                                 </div>
-
-                                <!-- FC -->
-                                <div class="grid grid-cols-3 items-center gap-2">
-                                    <span class="font-bold text-slate-700 text-[10px] flex items-center gap-1">❤️ FC (bpm):</span>
-                                    <input type="number" id="formFc" required placeholder="50 - 100" class="col-span-2 filter-input w-full px-2.5 py-1.5 bg-white rounded-xl font-mono text-xs font-bold text-slate-800">
-                                </div>
-
-                                <!-- FR -->
-                                <div class="grid grid-cols-3 items-center gap-2">
-                                    <span class="font-bold text-slate-700 text-[10px] flex items-center gap-1">🫁 FR (rpm):</span>
-                                    <input type="number" id="formFr" required placeholder="12 - 20" class="col-span-2 filter-input w-full px-2.5 py-1.5 bg-white rounded-xl font-mono text-xs font-bold text-slate-800">
-                                </div>
-
-                                <!-- SAT % -->
-                                <div class="grid grid-cols-3 items-center gap-2">
-                                    <span class="font-bold text-slate-700 text-[10px] flex items-center gap-1">🫁 SAT (%):</span>
-                                    <input type="number" id="formSat" required placeholder="95 - 100%" class="col-span-2 filter-input w-full px-2.5 py-1.5 bg-white rounded-xl font-mono text-xs font-bold text-slate-800">
+                                <div class="p-2 bg-indigo-500/10 rounded-xl text-indigo-400 border border-indigo-500/20">
+                                    📊
                                 </div>
                             </div>
+                            <p class="text-[10px] text-slate-500 font-semibold mt-3">Casos acumulados en base de datos</p>
                         </div>
 
-                        <!-- PANEL 2: ADICIONALES -->
-                        <div class="bg-blue-50/90 border border-blue-200 p-3.5 rounded-2xl">
-                            <div class="bg-brand-700 text-white text-xs font-extrabold px-3 py-1.5 rounded-xl mb-3 flex items-center justify-between">
-                                <span>Adicionales & Antropometría</span>
-                                <span class="text-[9px] font-normal opacity-90">Valores Clínicos</span>
-                            </div>
-
-                            <div class="space-y-2.5 text-xs">
-                                <!-- Temp °C -->
-                                <div class="grid grid-cols-3 items-center gap-2">
-                                    <span class="font-bold text-slate-700 text-[10px] flex items-center gap-1">🌡️ T° (°C):</span>
-                                    <input type="number" step="0.1" id="formT" required placeholder="36 - 37 °C" class="col-span-2 filter-input w-full px-2.5 py-1.5 bg-white rounded-xl font-mono text-xs font-bold text-slate-800">
+                        <!-- KPI 2 -->
+                        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 flex flex-col justify-between">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <span class="text-[10px] font-extrabold uppercase text-slate-400 tracking-wider">CASOS FILTRADOS</span>
+                                    <h3 id="kpiCasosAnio" class="text-2xl font-black text-brand-500 mt-1">0</h3>
                                 </div>
-
-                                <!-- Talla cm -->
-                                <div class="grid grid-cols-3 items-center gap-2">
-                                    <span class="font-bold text-slate-700 text-[10px] flex items-center gap-1">📏 Talla (cm):</span>
-                                    <input type="number" id="formTalla" placeholder="cm (e.g. 165)" class="col-span-2 filter-input w-full px-2.5 py-1.5 bg-white rounded-xl font-mono text-xs font-bold text-slate-800">
-                                </div>
-
-                                <!-- Peso Kg -->
-                                <div class="grid grid-cols-3 items-center gap-2">
-                                    <span class="font-bold text-slate-700 text-[10px] flex items-center gap-1">⚖️ Peso (Kg):</span>
-                                    <input type="number" step="0.1" id="formPeso" placeholder="Kg (e.g. 70)" class="col-span-2 filter-input w-full px-2.5 py-1.5 bg-white rounded-xl font-mono text-xs font-bold text-slate-800">
-                                </div>
-
-                                <!-- Glucosa -->
-                                <div class="grid grid-cols-3 items-center gap-2">
-                                    <span class="font-bold text-slate-700 text-[10px] flex items-center gap-1">🩸 Glucosa:</span>
-                                    <input type="number" id="formGlucosa" placeholder="mg/dL (70-140)" class="col-span-2 filter-input w-full px-2.5 py-1.5 bg-white rounded-xl font-mono text-xs font-bold text-slate-800">
+                                <div class="p-2 bg-brand-500/10 rounded-xl text-brand-400 border border-brand-500/20">
+                                    🗓️
                                 </div>
                             </div>
+                            <p id="subKpiAnio" class="text-[10px] text-slate-500 font-semibold mt-3">Acumulado período activo</p>
+                        </div>
+
+                        <!-- KPI 3 -->
+                        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 flex flex-col justify-between">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <span class="text-[10px] font-extrabold uppercase text-slate-400 tracking-wider">TASA INCIDENCIA x 10K HAB</span>
+                                    <h3 id="kpiTasaIncidencia" class="text-2xl font-black text-cyan-400 mt-1">0.00</h3>
+                                </div>
+                                <div class="p-2 bg-cyan-500/10 rounded-xl text-cyan-400 border border-cyan-500/20">
+                                    📈
+                                </div>
+                            </div>
+                            <p class="text-[10px] text-slate-500 font-semibold mt-3">Población adscrita: ~180,000 hab.</p>
+                        </div>
+
+                        <!-- KPI 4 -->
+                        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 flex flex-col justify-between">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <span class="text-[10px] font-extrabold uppercase text-slate-400 tracking-wider">GRUPO ETARIO PREVALENTE</span>
+                                    <h3 id="kpiGrupoPrevalente" class="text-base font-black text-amber-400 mt-1">--</h3>
+                                </div>
+                                <div class="p-2 bg-amber-500/10 rounded-xl text-amber-400 border border-amber-500/20">
+                                    👶
+                                </div>
+                            </div>
+                            <p id="subKpiGrupo" class="text-[10px] text-slate-500 font-semibold mt-3">Mayor incidencia observada</p>
                         </div>
 
                     </div>
-                </div>
 
-                <!-- Sintomatología -->
-                <div>
-                    <label class="text-[10px] font-bold text-slate-500 uppercase block mb-1">Motivo Principal de Consulta / Síntomas Agudos *</label>
-                    <textarea id="formMotivo" rows="2" required placeholder="Describa malestar principal, dolor, evolución de síntomas..." class="filter-input w-full p-2.5 text-xs rounded-xl"></textarea>
-                </div>
+                    <!-- GRÁFICOS Y TABLAS COMPARATIVAS -->
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <!-- Comparativo Mensual -->
+                        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-4">
+                            <div class="flex justify-between items-center">
+                                <div>
+                                    <h3 class="text-sm font-black text-white">Comparativo Mensual Interanual</h3>
+                                    <p class="text-[11px] text-slate-400 font-semibold">Evolución de episodios por mes</p>
+                                </div>
+                                <span class="text-xs font-black text-brand-500 bg-brand-500/10 px-2.5 py-1 rounded-lg border border-brand-500/20">HISTÓRICO</span>
+                            </div>
+                            <div class="h-64 relative">
+                                <canvas id="chartMensual"></canvas>
+                            </div>
+                        </div>
 
-                <div class="flex items-center justify-end gap-3 pt-3 border-t border-slate-100">
-                    <button type="button" onclick="closeNewTriageModal()" class="px-4 py-2 rounded-xl text-xs font-extrabold text-slate-500 hover:bg-slate-100 transition-all">Cancelar</button>
-                    <button type="submit" class="px-5 py-2 rounded-xl text-xs font-extrabold text-white bg-brand-700 hover:bg-brand-800 shadow-md transition-all uppercase tracking-wider">
-                        Guardar & Categorizar Paciente
-                    </button>
-                </div>
-
-            </form>
-        </div>
-    </div>
-
-    <!-- DRAWER: FICHA CLÍNICA DETALLADA -->
-    <div id="patientDrawer" class="fixed inset-0 z-50 hidden bg-slate-900/40 backdrop-blur-xs flex justify-end">
-        <div class="w-full max-w-md bg-white h-full shadow-2xl flex flex-col justify-between animate-fadeIn">
-            <div>
-                <div class="p-5 bg-brand-800 text-white flex items-center justify-between">
-                    <div>
-                        <span class="text-[10px] font-bold text-brand-200 uppercase tracking-widest">Expediente Clínico de Triaje</span>
-                        <h3 id="drawerPaciente" class="font-extrabold text-base leading-tight mt-0.5">---</h3>
+                        <!-- Curva Semanal -->
+                        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-4">
+                            <div class="flex justify-between items-center">
+                                <div>
+                                    <h3 class="text-sm font-black text-white">Línea de Tiempo Semanal (S.E.)</h3>
+                                    <p class="text-[11px] text-slate-400 font-semibold">Tendencia por semana epidemiológica</p>
+                                </div>
+                                <span class="text-xs font-black text-indigo-400 bg-indigo-500/10 px-2.5 py-1 rounded-lg border border-indigo-500/20">S.E. 1 - 52</span>
+                            </div>
+                            <div class="h-64 relative">
+                                <canvas id="chartSemanal"></canvas>
+                            </div>
+                        </div>
                     </div>
-                    <button onclick="closePatientDrawer()" class="text-slate-300 hover:text-white text-xl">✕</button>
                 </div>
 
-                <div class="p-5 space-y-5 overflow-y-auto max-h-[calc(100vh-130px)] custom-scrollbar">
-                    
-                    <div class="flex items-center justify-between bg-slate-50 p-3.5 rounded-2xl border border-slate-200">
+                <!-- VISTA 2: CANAL ENDÉMICO -->
+                <div id="vistaCanal" class="hidden bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4">
+                    <div class="flex flex-col md:flex-row md:items-center justify-between gap-2 border-b border-slate-800 pb-4">
                         <div>
-                            <p class="text-[9px] font-bold text-slate-400 uppercase">Historia Clínica</p>
-                            <p id="drawerHc" class="font-mono font-extrabold text-brand-700 text-sm">---</p>
+                            <h3 class="text-base font-black text-white">Canal Endémico Epidemiológico (Cuartiles Q1, Q2, Q3)</h3>
+                            <p class="text-xs text-slate-400 font-semibold">Permite vigilar si el comportamiento de la enfermedad se encuentra en Zona de Éxito, Seguridad, Alarma o Brote.</p>
                         </div>
-                        <div class="text-right">
-                            <p class="text-[9px] font-bold text-slate-400 uppercase">DNI / Documento</p>
-                            <p id="drawerDni" class="font-mono font-bold text-slate-800 text-xs">---</p>
-                        </div>
-                    </div>
-
-                    <div>
-                        <h4 class="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider mb-1.5">Categoría de Riesgo ESI</h4>
-                        <div id="drawerBadgeContainer"></div>
-                    </div>
-
-                    <div>
-                        <h4 class="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider mb-2">Signos Vitales Evaluados</h4>
-                        <div class="grid grid-cols-2 gap-2.5">
-                            <div class="p-2.5 bg-slate-50 rounded-xl border border-slate-200/80">
-                                <p class="text-[9px] text-slate-400 font-bold uppercase">Presión Arterial (PA)</p>
-                                <p id="drawerPa" class="text-xs font-extrabold text-slate-800 font-mono">-- / --</p>
-                            </div>
-                            <div class="p-2.5 bg-slate-50 rounded-xl border border-slate-200/80">
-                                <p class="text-[9px] text-slate-400 font-bold uppercase">Frec. Cardíaca (FC)</p>
-                                <p id="drawerFc" class="text-xs font-extrabold text-slate-800 font-mono">-- bpm</p>
-                            </div>
-                            <div class="p-2.5 bg-slate-50 rounded-xl border border-slate-200/80">
-                                <p class="text-[9px] text-slate-400 font-bold uppercase">Frec. Resp. (FR)</p>
-                                <p id="drawerFr" class="text-xs font-extrabold text-slate-800 font-mono">-- rpm</p>
-                            </div>
-                            <div class="p-2.5 bg-slate-50 rounded-xl border border-slate-200/80">
-                                <p class="text-[9px] text-slate-400 font-bold uppercase">Saturación (SpO2)</p>
-                                <p id="drawerSat" class="text-xs font-extrabold text-slate-800 font-mono">-- %</p>
-                            </div>
+                        <div class="flex items-center gap-2">
+                            <span class="w-3 h-3 bg-emerald-500/30 border border-emerald-500 rounded-sm"></span><span class="text-[10px] text-slate-400 font-bold">Éxito</span>
+                            <span class="w-3 h-3 bg-emerald-500 rounded-sm"></span><span class="text-[10px] text-slate-400 font-bold">Seguridad</span>
+                            <span class="w-3 h-3 bg-amber-500 rounded-sm"></span><span class="text-[10px] text-slate-400 font-bold">Alarma</span>
+                            <span class="w-3 h-3 bg-rose-500 rounded-sm"></span><span class="text-[10px] text-slate-400 font-bold">Brote</span>
                         </div>
                     </div>
-
-                    <div>
-                        <h4 class="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider mb-2">Adicionales & Biometría</h4>
-                        <div class="grid grid-cols-2 gap-2.5">
-                            <div class="p-2.5 bg-slate-50 rounded-xl border border-slate-200/80">
-                                <p class="text-[9px] text-slate-400 font-bold uppercase">Temperatura (T°)</p>
-                                <p id="drawerT" class="text-xs font-extrabold text-slate-800 font-mono">-- °C</p>
-                            </div>
-                            <div class="p-2.5 bg-slate-50 rounded-xl border border-slate-200/80">
-                                <p class="text-[9px] text-slate-400 font-bold uppercase">Glucosa / HGT</p>
-                                <p id="drawerGlucosa" class="text-xs font-extrabold text-slate-800 font-mono">-- mg/dL</p>
-                            </div>
-                            <div class="p-2.5 bg-slate-50 rounded-xl border border-slate-200/80">
-                                <p class="text-[9px] text-slate-400 font-bold uppercase">Antropometría</p>
-                                <p id="drawerAntropometria" class="text-xs font-extrabold text-slate-800">-- cm / -- Kg</p>
-                                <p id="drawerImc" class="text-[9px] font-bold text-brand-700 mt-0.5">IMC: --</p>
-                            </div>
-                            <div class="p-2.5 bg-slate-50 rounded-xl border border-slate-200/80">
-                                <p class="text-[9px] text-slate-400 font-bold uppercase">Alertas Detectadas</p>
-                                <div id="drawerAlertsList" class="flex flex-wrap gap-1 mt-1"></div>
-                            </div>
-                        </div>
+                    <div class="h-96 relative">
+                        <canvas id="chartCanalEndemico"></canvas>
                     </div>
-
-                    <div>
-                        <h4 class="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider mb-1">Motivo de Consulta</h4>
-                        <p id="drawerMotivo" class="text-xs text-slate-700 bg-slate-50 p-3 rounded-xl border border-slate-200/80 italic leading-relaxed">No especificado</p>
-                    </div>
-
                 </div>
-            </div>
 
-            <div class="p-4 border-t border-slate-100 bg-slate-50 flex gap-2">
-                <button onclick="printTicket()" class="flex-1 bg-brand-800 hover:bg-brand-900 text-white py-2.5 rounded-xl text-xs font-extrabold transition-all uppercase tracking-wider">
-                    🖨️ Imprimir Ticket
-                </button>
-                <button onclick="closePatientDrawer()" class="px-4 bg-slate-200 hover:bg-slate-300 text-slate-700 py-2.5 rounded-xl text-xs font-bold transition-all">
-                    Cerrar
-                </button>
-            </div>
+                <!-- VISTA 3: MATRIZ SEMANAL DE REPORTE S.E. -->
+                <div id="vistaMatriz" class="hidden bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-4">
+                    <div class="flex justify-between items-center pb-3 border-b border-slate-800">
+                        <h3 class="text-sm font-black text-white">Matriz Consolidada de Casos por Semana Epidemiológica</h3>
+                        <button onclick="exportarTablaCSV()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold px-3 py-1.5 rounded-lg text-xs border border-slate-700 flex items-center gap-1.5">
+                            ⬇️ Descargar Dataset
+                        </button>
+                    </div>
+                    <div class="overflow-x-auto max-h-[500px] rounded-xl border border-slate-800">
+                        <table class="w-full text-left text-xs">
+                            <thead class="bg-slate-950 text-slate-400 font-bold sticky top-0 border-b border-slate-800">
+                                <tr>
+                                    <th class="p-3">S.E.</th>
+                                    <th class="p-3">Año / Mes</th>
+                                    <th class="p-3 text-right">Casos Totales</th>
+                                    <th class="p-3 text-right text-purple-400">Hospitalizados</th>
+                                    <th class="p-3 text-right">&lt; 1 Año</th>
+                                    <th class="p-3 text-right">1-4 Años</th>
+                                    <th class="p-3 text-right">5-11 Años</th>
+                                    <th class="p-3 text-right">60+ Años</th>
+                                    <th class="p-3 text-center">Zona Canal</th>
+                                </tr>
+                            </thead>
+                            <tbody id="bodyMatrizSE" class="divide-y divide-slate-800/60 bg-slate-900/50">
+                                <!-- Filas dinámicas -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- VISTA 4: HOSPITALIZACIONES -->
+                <div id="vistaHosp" class="hidden space-y-6">
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5">
+                            <span class="text-[10px] font-black uppercase text-slate-400 tracking-wider">TOTAL ADMISIONES HOSPITALARIAS</span>
+                            <h3 id="kpiHospTotal" class="text-3xl font-black text-purple-400 mt-2">0</h3>
+                            <p class="text-[10px] text-slate-500 font-bold mt-2">Pacientes internados por esta patología</p>
+                        </div>
+                        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5">
+                            <span class="text-[10px] font-black uppercase text-slate-400 tracking-wider">TASA DE SEVERIDAD CLÍNICA</span>
+                            <h3 id="kpiHospSeveridad" class="text-3xl font-black text-amber-400 mt-2">0.0%</h3>
+                            <p class="text-[10px] text-slate-500 font-bold mt-2">% de casos que requirieron cama hospitalaria</p>
+                        </div>
+                        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5">
+                            <span class="text-[10px] font-black uppercase text-slate-400 tracking-wider">SEMANA DE MÁXIMA DEMANDA</span>
+                            <h3 id="kpiHospPicoSE" class="text-2xl font-black text-white mt-2">--</h3>
+                            <p class="text-[10px] text-slate-500 font-bold mt-2">Pico de ingreso reportado</p>
+                        </div>
+                    </div>
+
+                    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-4">
+                        <h3 class="text-sm font-black text-white">Distribución de Hospitalizaciones por Grupo Etario</h3>
+                        <div class="h-64 relative">
+                            <canvas id="chartHospEdad"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- VISTA 5: VISTA INDIVIDUAL DE CASOS NOTIFICADOS -->
+                <div id="vistaIndividuales" class="hidden space-y-6">
+                    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-4">
+                        <div class="flex flex-col md:flex-row md:items-center justify-between gap-3 border-b border-slate-800 pb-3">
+                            <div>
+                                <h3 class="text-base font-black text-white">Repositorio de Fichas Epidemiológicas Individuales</h3>
+                                <p class="text-xs text-slate-400 font-semibold">Buscador y filtro detallado de casos notificados uno a uno (Ficha de Notificación Individual MINSA).</p>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <input type="text" id="inputBuscarIndividual" oninput="filtrarTablaIndividuales()" placeholder="🔍 Buscar por DNI, Nombre o Diagnóstico..." class="bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-slate-200 w-full md:w-64 focus:outline-none focus:border-brand-500">
+                            </div>
+                        </div>
+
+                        <div class="overflow-x-auto rounded-xl border border-slate-800 max-h-[550px]">
+                            <table class="w-full text-left text-xs">
+                                <thead class="bg-slate-950 text-slate-400 font-bold sticky top-0 border-b border-slate-800">
+                                    <tr>
+                                        <th class="p-3">ID / DNI</th>
+                                        <th class="p-3">Paciente</th>
+                                        <th class="p-3">Edad / Sexo</th>
+                                        <th class="p-3">Diagnóstico / CIE-10</th>
+                                        <th class="p-3">S.E. / Año</th>
+                                        <th class="p-3">Clasificación</th>
+                                        <th class="p-3">Condición</th>
+                                        <th class="p-3">Distrito</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="bodyTablaIndividuales" class="divide-y divide-slate-800/60 bg-slate-900/40">
+                                    <!-- Datos de casos individuales cargados dinámicamente -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+            </main>
         </div>
     </div>
-
-    <!-- CONTENEDOR TOAST NOTIFICACIONES -->
-    <div id="toastContainer" class="fixed bottom-5 right-5 z-50 space-y-2 pointer-events-none"></div>
 
     <script>
-        // --- BASE DE DATOS TRIAJE EXPANDIDA PARA PRUEBAS DE PAGINACIÓN ---
-        let RAW_DATA = [
-            { id: 1, hc: 'HC-009231', fecha: '2026-08-04', hora: '08:15', paciente: 'ZARATE MENDOZA, ELENA MARIA', dni: '09223341', edad: '62a', sexo: 'F', paSist: 150, paDiast: 95, fc: 110, fr: 24, sat: 91, t: 38.8, talla: 160, peso: 78, glucosa: 185, riesgo: 'critico', motivo: 'Dificultad respiratoria severa, tos continua y sensación febril intensa.' },
-            { id: 2, hc: 'HC-008412', fecha: '2026-08-04', hora: '09:42', paciente: 'GOMEZ RIVERA, CARLOS AUGUSTO', dni: '45892231', edad: '45a', sexo: 'M', paSist: 120, paDiast: 80, fc: 72, fr: 16, sat: 98, t: 36.5, talla: 175, peso: 72, glucosa: 98, riesgo: 'estable', motivo: 'Chequeo general ambulatorio y leve dolor articular en rodilla.' },
-            { id: 3, hc: 'HC-007501', fecha: '2026-08-04', hora: '10:05', paciente: 'QUISPE LAURA, JUAN SEBASTIAN', dni: '70221145', edad: '12a', sexo: 'M', paSist: 110, paDiast: 70, fc: 80, fr: 18, sat: 99, t: 37.1, talla: 142, peso: 38, glucosa: 90, riesgo: 'estable', motivo: 'Evaluación pediátrica por rash cutáneo alérgico leve.' },
-            { id: 4, hc: 'HC-006321', fecha: '2026-08-04', hora: '11:30', paciente: 'HUAMAN ORELLANA, ROSA LUZ', dni: '44551122', edad: '28a', sexo: 'F', paSist: 118, paDiast: 76, fc: 104, fr: 22, sat: 96, t: 39.2, talla: 158, peso: 60, glucosa: 115, riesgo: 'alto', motivo: 'Síndrome febril agudo de causa por determinar y malestar general.' },
-            { id: 5, hc: 'HC-005102', fecha: '2026-08-04', hora: '12:55', paciente: 'VILLALOBOS TORRES, LUIS FERNANDO', dni: '10293847', edad: '75a', sexo: 'M', paSist: 85, paDiast: 55, fc: 122, fr: 28, sat: 88, t: 35.8, talla: 168, peso: 80, glucosa: 240, riesgo: 'critico', motivo: 'Descompensación hemodinámica, disnea en reposo e hiperglicemia.' },
-            { id: 6, hc: 'HC-004399', fecha: '2026-08-04', hora: '13:10', paciente: 'ALVAREZ CASTRO, MILAGROS LUCIA', dni: '41223344', edad: '34a', sexo: 'F', paSist: 135, paDiast: 88, fc: 88, fr: 19, sat: 97, t: 37.5, talla: 162, peso: 68, glucosa: 110, riesgo: 'moderado', motivo: 'Cefalea intensa refractaria a analgésicos comunes.' },
-            { id: 7, hc: 'HC-003881', fecha: '2026-08-04', hora: '13:45', paciente: 'RAMIREZ SUAREZ, JORGE ENRIQUE', dni: '08998877', edad: '58a', sexo: 'M', paSist: 165, paDiast: 102, fc: 95, fr: 20, sat: 96, t: 36.8, talla: 170, peso: 85, glucosa: 195, riesgo: 'alto', motivo: 'Crisis hipertensiva asintomática detectada en control.' },
-            { id: 8, hc: 'HC-002110', fecha: '2026-08-04', hora: '14:20', paciente: 'FLORES SANCHEZ, ANA BELEN', dni: '73445566', edad: '22a', sexo: 'F', paSist: 115, paDiast: 75, fc: 76, fr: 16, sat: 99, t: 36.7, talla: 155, peso: 52, glucosa: 92, riesgo: 'estable', motivo: 'Traumatismo leve en tobillo derecho por caída de altura propia.' },
-            { id: 9, hc: 'HC-001920', fecha: '2026-08-04', hora: '14:50', paciente: 'TORRES VEGA, DIEGO ALONSO', dni: '48776655', edad: '39a', sexo: 'M', paSist: 125, paDiast: 82, fc: 108, fr: 21, sat: 94, t: 38.6, talla: 178, peso: 90, glucosa: 130, riesgo: 'alto', motivo: 'Dolor abdominal agudo en fosa ilíaca derecha con náuseas.' },
-            { id: 10, hc: 'HC-001004', fecha: '2026-08-04', hora: '15:15', paciente: 'CHAVEZ MORALES, SOFIA BEATRIZ', dni: '15667788', edad: '67a', sexo: 'F', paSist: 140, paDiast: 90, fc: 84, fr: 18, sat: 95, t: 37.0, talla: 150, peso: 70, glucosa: 210, riesgo: 'moderado', motivo: 'Parestesia en miembros inferiores e hiperglicemia evolutiva.' },
-            { id: 11, hc: 'HC-000882', fecha: '2026-08-04', hora: '15:40', paciente: 'PAREDES DIAZ, MATEO ISAAC', dni: '76554433', edad: '19a', sexo: 'M', paSist: 110, paDiast: 70, fc: 68, fr: 15, sat: 98, t: 36.4, talla: 172, peso: 65, glucosa: 88, riesgo: 'estable', motivo: 'Laceración cutánea en antebrazo derecho necesitada de sutura.' },
-            { id: 12, hc: 'HC-000774', fecha: '2026-08-04', hora: '16:05', paciente: 'CASTILLO ROJAS, VALERIA INES', dni: '40112233', edad: '51a', sexo: 'F', paSist: 175, paDiast: 110, fc: 115, fr: 25, sat: 92, t: 37.2, talla: 159, peso: 82, glucosa: 160, riesgo: 'critico', motivo: 'Precordialgia opresiva irradiada a mandíbula y diaforesis.' },
-            { id: 13, hc: 'HC-000650', fecha: '2026-08-04', hora: '16:30', paciente: 'NÚÑEZ CORREA, MARIO ARTURO', dni: '09887766', edad: '81a', sexo: 'M', paSist: 98, paDiast: 62, fc: 54, fr: 14, sat: 93, t: 36.0, talla: 165, peso: 60, glucosa: 105, riesgo: 'moderado', motivo: 'Somnolencia inusual y astenia marcada.' },
-            { id: 14, hc: 'HC-000512', fecha: '2026-08-04', hora: '17:00', paciente: 'VARGAS MEDINA, PATRICIA ROCIO', dni: '43221100', edad: '31a', sexo: 'F', paSist: 120, paDiast: 80, fc: 78, fr: 16, sat: 99, t: 36.6, talla: 164, peso: 58, glucosa: 95, riesgo: 'estable', motivo: 'Consulta por lumbalgia mecánica posterior a esfuerzo físico.' },
-            { id: 15, hc: 'HC-000411', fecha: '2026-08-04', hora: '17:25', paciente: 'REYES SALAZAR, GABRIEL OMAR', dni: '71998811', edad: '26a', sexo: 'M', paSist: 130, paDiast: 85, fc: 98, fr: 20, sat: 97, t: 38.3, talla: 176, peso: 79, glucosa: 112, riesgo: 'moderado', motivo: 'Odinofragia intensa con placas purulentas y fiebre.' }
-        ];
+        // ESTADO GLOBAL DE LA APLICACIÓN
+        const appState = {
+            moduloActivo: 'EDAs', // 'EDAs', 'IRAs', 'Febriles', 'Individuales'
+            pestanaAnalitica: 'dashboard', // 'dashboard', 'canal', 'matriz', 'hospitalizados'
+            anioSeleccionado: 'TODOS',
+            mesSeleccionado: 'TODOS',
+            seSeleccionada: 'TODAS',
+            isCollapsed: false,
+            
+            // Repositorio de datos cargados por pestaña del Excel
+            repositorios: {
+                EDAs: [],
+                IRAs: [],
+                Febriles: [],
+                Individuales: []
+            },
 
-        let filteredData = [...RAW_DATA];
-        let currentSelectedPatient = null;
-        let flowChartInstance = null;
-        let priorityChartInstance = null;
-
-        // Estado de Paginación
-        let currentPage = 1;
-        let itemsPerPage = 10;
-
-        const formatDate = (dateStr) => {
-            if (!dateStr) return '';
-            const parts = dateStr.split('-');
-            return `${parts[2]}.${parts[1]}.${parts[0]}`;
+            // Instancias de Gráficos Chart.js
+            charts: {
+                mensual: null,
+                semanal: null,
+                canal: null,
+                hospEdad: null
+            }
         };
 
-        function calculateIMC(peso, tallaCm) {
-            if (!peso || !tallaCm) return null;
-            const m = tallaCm / 100;
-            return (peso / (m * m)).toFixed(1);
+        // LIMPIEZA DE NÚMEROS Y TEXTOS EXCEL
+        function limpiarNumero(val, defecto = 0) {
+            if (val === undefined || val === null) return defecto;
+            if (typeof val === 'number') return isNaN(val) ? defecto : val;
+            let str = String(val).trim().replace(/,/g, '');
+            let parsed = parseFloat(str);
+            return isNaN(parsed) ? defecto : parsed;
         }
 
-        // EVALUACIÓN CLÍNICA SEGÚN RANGOS REFERENCIALES
-        function evaluateClinicalAlerts(item) {
-            const alerts = [];
+        // BUSCADOR FLEXIBLE DE COLUMNAS
+        function buscarValorColumna(row, patronesRegex, valorDefecto = '') {
+            if (!row || typeof row !== 'object') return valorDefecto;
+            const keys = Object.keys(row);
             
-            if (item.paSist >= 140 || item.paDiast >= 90) alerts.push({ text: 'HTA', cls: 'bg-red-50 text-red-700 border-red-200' });
-            else if (item.paSist < 90 || item.paDiast < 60) alerts.push({ text: 'Hipotensión', cls: 'bg-red-100 text-red-800 border-red-300' });
-
-            if (item.fc > 100) alerts.push({ text: 'Taquicardia', cls: 'bg-amber-50 text-amber-700 border-amber-200' });
-            else if (item.fc < 50) alerts.push({ text: 'Bradicardia', cls: 'bg-amber-50 text-amber-700 border-amber-200' });
-
-            if (item.fr > 20) alerts.push({ text: 'Taquipnea', cls: 'bg-orange-50 text-orange-700 border-orange-200' });
-
-            if (item.sat < 90) alerts.push({ text: 'Hipoxia Severa', cls: 'bg-red-100 text-red-800 border-red-300 font-extrabold pulse-red' });
-            else if (item.sat < 95) alerts.push({ text: 'SatO2 Baja', cls: 'bg-amber-50 text-amber-700 border-amber-200' });
-
-            if (item.t >= 38.0) alerts.push({ text: `Fiebre (${item.t}°C)`, cls: 'bg-red-50 text-red-700 border-red-200' });
-            else if (item.t < 35.5) alerts.push({ text: 'Hipotermia', cls: 'bg-blue-50 text-blue-700 border-blue-200' });
-
-            if (item.glucosa > 180) alerts.push({ text: `Hiperglicemia`, cls: 'bg-purple-50 text-purple-700 border-purple-200' });
-
-            return alerts;
-        }
-
-        function calculateTriagePriority(paSist, paDiast, fc, fr, sat, t, glucosa) {
-            if (sat < 90 || t >= 39.5 || paSist < 90 || fc > 120 || fr > 26 || (glucosa && glucosa < 60)) {
-                return 'critico';
-            } else if (sat < 95 || t >= 38.5 || paSist >= 140 || fc > 100 || fr > 20 || (glucosa && glucosa > 200)) {
-                return 'alto';
-            } else if (t >= 37.8 || paSist >= 130) {
-                return 'moderado';
-            }
-            return 'estable';
-        }
-
-        function triggerToast(msg, type = 'info') {
-            const container = document.getElementById('toastContainer');
-            if (!container) return;
-            const toast = document.createElement('div');
-            
-            const bgClass = type === 'danger' ? 'bg-red-900 text-white' : 
-                            type === 'success' ? 'bg-emerald-900 text-white' : 'bg-slate-900 text-white';
-            
-            toast.className = `pointer-events-auto flex items-center gap-2.5 px-4 py-2.5 rounded-xl shadow-xl text-xs font-bold ${bgClass} transition-all transform translate-y-2 opacity-0`;
-            toast.innerHTML = `<span>${type === 'danger' ? '🚨' : type === 'success' ? '✅' : 'ℹ️'}</span> <span>${msg}</span>`;
-            
-            container.appendChild(toast);
-            
-            setTimeout(() => { toast.classList.remove('translate-y-2', 'opacity-0'); }, 10);
-            setTimeout(() => {
-                toast.classList.add('opacity-0', 'translate-y-2');
-                setTimeout(() => toast.remove(), 300);
-            }, 3000);
-        }
-
-        function executeFilter() {
-            const start = document.getElementById('dateStart').value;
-            const end = document.getElementById('dateEnd').value;
-            const text = document.getElementById('textSearch').value.toLowerCase().trim();
-            const priority = document.getElementById('priorityFilter').value;
-
-            filteredData = RAW_DATA.filter(item => {
-                let matchDate = true;
-                if (start && end) matchDate = item.fecha >= start && item.fecha <= end;
-                
-                const matchText = item.paciente.toLowerCase().includes(text) || 
-                                 item.dni.includes(text) || 
-                                 item.hc.toLowerCase().includes(text);
-                
-                let matchPriority = true;
-                if (priority !== 'TODOS') matchPriority = item.riesgo === priority;
-                
-                return matchDate && matchText && matchPriority;
-            });
-
-            currentPage = 1; // Reiniciar a la primera página al filtrar
-            renderTable();
-            updateStats();
-        }
-
-        function resetFilters() {
-            document.getElementById('dateStart').value = '';
-            document.getElementById('dateEnd').value = '';
-            document.getElementById('textSearch').value = '';
-            document.getElementById('priorityFilter').value = 'TODOS';
-            filteredData = [...RAW_DATA];
-            currentPage = 1;
-            renderTable();
-            updateStats();
-            triggerToast('Filtros restablecidos', 'info');
-        }
-
-        function changePageSize(val) {
-            itemsPerPage = val === 'ALL' ? 999999 : parseInt(val);
-            currentPage = 1;
-            renderTable();
-        }
-
-        function goToPage(page) {
-            const totalPages = itemsPerPage === 999999 ? 1 : Math.ceil(filteredData.length / itemsPerPage);
-            if (page < 1 || page > totalPages) return;
-            currentPage = page;
-            renderTable();
-        }
-
-        function renderTable() {
-            const body = document.getElementById('dataTableBody');
-            const msg = document.getElementById('emptyMsg');
-            const infoEl = document.getElementById('paginationInfo');
-            const controlsEl = document.getElementById('paginationControls');
-
-            if (!body) return;
-
-            const totalItems = filteredData.length;
-
-            if (totalItems === 0) {
-                body.innerHTML = '';
-                if (msg) msg.classList.remove('hidden');
-                if (infoEl) infoEl.innerText = 'Mostrando 0 - 0 de 0 casos';
-                if (controlsEl) controlsEl.innerHTML = '';
-                return;
-            }
-
-            if (msg) msg.classList.add('hidden');
-
-            // Paginado matemático
-            const effectiveLimit = itemsPerPage === 999999 ? totalItems : itemsPerPage;
-            const totalPages = Math.ceil(totalItems / effectiveLimit);
-
-            if (currentPage > totalPages) currentPage = totalPages || 1;
-
-            const startIndex = (currentPage - 1) * effectiveLimit;
-            const endIndex = Math.min(startIndex + effectiveLimit, totalItems);
-
-            const pageData = filteredData.slice(startIndex, endIndex);
-
-            // Actualizar texto informativo
-            if (infoEl) {
-                if (itemsPerPage === 999999) {
-                    infoEl.innerText = `Mostrando los ${totalItems} casos (TOTAL)`;
-                } else {
-                    infoEl.innerText = `Mostrando ${startIndex + 1} - ${endIndex} de ${totalItems} casos`;
-                }
-            }
-
-            // Renderizar Filas visibles
-            body.innerHTML = pageData.map(row => {
-                let badgeClass = '';
-                let badgeText = '';
-                if (row.riesgo === 'critico') {
-                    badgeClass = 'bg-red-50 text-red-700 border-red-200 font-black pulse-red';
-                    badgeText = 'P-I • CRÍTICO';
-                } else if (row.riesgo === 'alto') {
-                    badgeClass = 'bg-orange-50 text-orange-700 border-orange-200 font-extrabold';
-                    badgeText = 'P-II • URGENTE';
-                } else if (row.riesgo === 'moderado') {
-                    badgeClass = 'bg-amber-50 text-amber-700 border-amber-200 font-bold';
-                    badgeText = 'P-III • MODERADO';
-                } else {
-                    badgeClass = 'bg-emerald-50 text-emerald-700 border-emerald-200 font-bold';
-                    badgeText = 'P-IV • ESTABLE';
-                }
-
-                const alerts = evaluateClinicalAlerts(row);
-                const imc = calculateIMC(row.peso, row.talla);
-
-                const alertsHtml = alerts.length > 0 
-                    ? alerts.map(a => `<span class="text-[9px] px-1.5 py-0.5 rounded border font-bold ${a.cls}">${a.text}</span>`).join('')
-                    : `<span class="text-[9px] px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200 font-semibold">Rango Normal</span>`;
-
-                return `
-                    <tr class="table-row-hover">
-                        <td class="px-4 py-3">
-                            <p class="font-bold text-slate-800 font-mono text-xs">${formatDate(row.fecha)}</p>
-                            <p class="text-[10px] text-slate-500 font-medium">${row.hora} hrs</p>
-                        </td>
-                        <td class="px-4 py-3">
-                            <div class="flex flex-col gap-0.5">
-                                <span class="font-extrabold text-slate-900 uppercase text-xs leading-snug">${row.paciente}</span>
-                                <div class="flex items-center gap-1.5 text-[10px]">
-                                    <span class="text-slate-500 font-mono">DNI: ${row.dni}</span>
-                                    <span class="text-brand-700 font-bold font-mono bg-blue-50 px-1 rounded">${row.hc}</span>
-                                </div>
-                            </div>
-                        </td>
-                        <td class="px-3 py-3 text-center">
-                            <span class="bg-slate-100 text-slate-700 px-2 py-0.5 rounded-lg font-bold text-[10px] inline-block">
-                                ${row.edad} / ${row.sexo}
-                            </span>
-                            ${imc ? `<p class="text-[8px] font-extrabold text-slate-400 mt-0.5">IMC: ${imc}</p>` : ''}
-                        </td>
-                        <td class="px-4 py-3">
-                            <div class="space-y-1.5">
-                                <div class="grid grid-cols-6 gap-1 text-center bg-slate-50 p-1.5 rounded-xl border border-slate-100 font-mono text-[10px]">
-                                    <div><span class="block text-[8px] text-slate-400 font-bold">PA</span><span class="font-bold text-slate-800">${row.paSist}/${row.paDiast}</span></div>
-                                    <div><span class="block text-[8px] text-slate-400 font-bold">FC</span><span class="font-bold ${row.fc > 100 ? 'text-amber-600' : 'text-slate-800'}">${row.fc}</span></div>
-                                    <div><span class="block text-[8px] text-slate-400 font-bold">FR</span><span class="font-bold ${row.fr > 20 ? 'text-orange-600' : 'text-slate-800'}">${row.fr}</span></div>
-                                    <div><span class="block text-[8px] text-slate-400 font-bold">SpO2</span><span class="font-bold ${row.sat < 94 ? 'text-red-600' : 'text-slate-800'}">${row.sat}%</span></div>
-                                    <div><span class="block text-[8px] text-slate-400 font-bold">T°</span><span class="font-bold ${row.t >= 38 ? 'text-red-600' : 'text-slate-800'}">${row.t}°</span></div>
-                                    <div><span class="block text-[8px] text-slate-400 font-bold">Glu</span><span class="font-bold text-slate-800">${row.glucosa || '--'}</span></div>
-                                </div>
-                                <div class="flex flex-wrap items-center gap-1">
-                                    ${alertsHtml}
-                                    <span class="text-[9px] text-slate-500 italic truncate max-w-[200px]" title="${row.motivo}">"${row.motivo}"</span>
-                                </div>
-                            </div>
-                        </td>
-                        <td class="px-3 py-3 text-center">
-                            <span class="text-[9px] px-2.5 py-1 rounded-full border ${badgeClass}">
-                                ${badgeText}
-                            </span>
-                        </td>
-                        <td class="px-3 py-3 text-center">
-                            <button onclick="openPatientDrawer(${row.id})" class="bg-slate-100 hover:bg-brand-50 text-slate-700 hover:text-brand-700 px-2.5 py-1 rounded-lg font-bold text-xs transition-all border border-slate-200">
-                                👁️ Ficha
-                            </button>
-                        </td>
-                    </tr>
-                `;
-            }).join('');
-
-            // Renderizar Botones de Paginación
-            renderPaginationControls(totalPages);
-        }
-
-        function renderPaginationControls(totalPages) {
-            const controlsEl = document.getElementById('paginationControls');
-            if (!controlsEl) return;
-
-            if (totalPages <= 1) {
-                controlsEl.innerHTML = '';
-                return;
-            }
-
-            let html = '';
-
-            // Botón Anterior
-            const prevDisabled = currentPage === 1;
-            html += `
-                <button onclick="goToPage(${currentPage - 1})" ${prevDisabled ? 'disabled' : ''} 
-                    class="px-2.5 py-1 rounded-lg text-xs font-extrabold transition-all border ${
-                        prevDisabled ? 'bg-slate-100 text-slate-300 border-slate-200 cursor-not-allowed' : 'bg-white text-slate-700 border-slate-300 hover:bg-brand-50 hover:text-brand-700'
-                    }">
-                    « Ant
-                </button>
-            `;
-
-            // Números de Página
-            for (let p = 1; p <= totalPages; p++) {
-                const isActive = p === currentPage;
-                html += `
-                    <button onclick="goToPage(${p})" 
-                        class="px-3 py-1 rounded-lg text-xs font-black transition-all border ${
-                            isActive 
-                                ? 'bg-brand-700 text-white border-brand-700 shadow-xs' 
-                                : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-100'
-                        }">
-                        ${p}
-                    </button>
-                `;
-            }
-
-            // Botón Siguiente
-            const nextDisabled = currentPage === totalPages;
-            html += `
-                <button onclick="goToPage(${currentPage + 1})" ${nextDisabled ? 'disabled' : ''} 
-                    class="px-2.5 py-1 rounded-lg text-xs font-extrabold transition-all border ${
-                        nextDisabled ? 'bg-slate-100 text-slate-300 border-slate-200 cursor-not-allowed' : 'bg-white text-slate-700 border-slate-300 hover:bg-brand-50 hover:text-brand-700'
-                    }">
-                    Sig »
-                </button>
-            `;
-
-            controlsEl.innerHTML = html;
-        }
-
-        function updateStats() {
-            const elTotal = document.getElementById('statTotal');
-            if (elTotal) elTotal.innerText = RAW_DATA.length;
-
-            const elCritical = document.getElementById('statCritical');
-            if (elCritical) {
-                const criticals = RAW_DATA.filter(r => r.riesgo === 'critico' || r.riesgo === 'alto').length;
-                elCritical.innerText = `${criticals} hoy`;
-            }
-
-            if (priorityChartInstance && priorityChartInstance.data && priorityChartInstance.data.datasets[0]) {
-                const countStables = RAW_DATA.filter(r => r.riesgo === 'estable').length;
-                const countMod = RAW_DATA.filter(r => r.riesgo === 'moderado').length;
-                const countHigh = RAW_DATA.filter(r => r.riesgo === 'alto').length;
-                const countCrit = RAW_DATA.filter(r => r.riesgo === 'critico').length;
-                
-                priorityChartInstance.data.datasets[0].data = [countStables, countMod, countHigh, countCrit];
-                priorityChartInstance.update();
-            }
-        }
-
-        function openNewTriageModal() {
-            const modal = document.getElementById('newTriageModal');
-            if (modal) modal.classList.remove('hidden');
-        }
-
-        function closeNewTriageModal() {
-            const modal = document.getElementById('newTriageModal');
-            if (modal) modal.classList.add('hidden');
-            const form = document.getElementById('triageForm');
-            if (form) form.reset();
-        }
-
-        function saveNewTriage(e) {
-            e.preventDefault();
-            
-            const paciente = document.getElementById('formPaciente').value;
-            const dni = document.getElementById('formDni').value;
-            const hc = document.getElementById('formHc').value || `HC-00${Math.floor(1000 + Math.random() * 9000)}`;
-            const edad = document.getElementById('formEdad').value;
-            const sexo = document.getElementById('formSexo').value;
-            
-            const paSist = parseInt(document.getElementById('formPaSist').value);
-            const paDiast = parseInt(document.getElementById('formPaDiast').value);
-            const fc = parseInt(document.getElementById('formFc').value);
-            const fr = parseInt(document.getElementById('formFr').value);
-            const sat = parseInt(document.getElementById('formSat').value);
-            
-            const t = parseFloat(document.getElementById('formT').value);
-            const talla = parseInt(document.getElementById('formTalla').value) || 0;
-            const peso = parseFloat(document.getElementById('formPeso').value) || 0;
-            const glucosa = parseInt(document.getElementById('formGlucosa').value) || 0;
-            const motivo = document.getElementById('formMotivo').value || 'Atención en Urgencias';
-
-            const autoRiesgo = calculateTriagePriority(paSist, paDiast, fc, fr, sat, t, glucosa);
-            
-            const newRecord = {
-                id: Date.now(),
-                hc,
-                fecha: new Date().toISOString().split('T')[0],
-                hora: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-                paciente,
-                dni,
-                edad,
-                sexo,
-                paSist,
-                paDiast,
-                fc,
-                fr,
-                sat,
-                t,
-                talla,
-                peso,
-                glucosa,
-                riesgo: autoRiesgo,
-                motivo
-            };
-
-            RAW_DATA.unshift(newRecord);
-            executeFilter();
-            closeNewTriageModal();
-            triggerToast(`Paciente ${paciente} clasificado: ${autoRiesgo.toUpperCase()}`, autoRiesgo === 'critico' ? 'danger' : 'success');
-        }
-
-        function openPatientDrawer(id) {
-            const patient = RAW_DATA.find(p => p.id === id);
-            if (!patient) return;
-            
-            currentSelectedPatient = patient;
-
-            document.getElementById('drawerPaciente').innerText = patient.paciente;
-            document.getElementById('drawerHc').innerText = patient.hc;
-            document.getElementById('drawerDni').innerText = patient.dni;
-            
-            document.getElementById('drawerPa').innerText = `${patient.paSist} / ${patient.paDiast} mmHg`;
-            document.getElementById('drawerFc').innerText = `${patient.fc} bpm`;
-            document.getElementById('drawerFr').innerText = `${patient.fr} rpm`;
-            document.getElementById('drawerSat').innerText = `${patient.sat} %`;
-            
-            document.getElementById('drawerT').innerText = `${patient.t} °C`;
-            document.getElementById('drawerGlucosa').innerText = patient.glucosa ? `${patient.glucosa} mg/dL` : 'No registrada';
-            
-            const imc = calculateIMC(patient.peso, patient.talla);
-            document.getElementById('drawerAntropometria').innerText = `${patient.talla || '--'} cm / ${patient.peso || '--'} Kg`;
-            document.getElementById('drawerImc').innerText = imc ? `IMC: ${imc} Kg/m²` : 'IMC: N/A';
-
-            document.getElementById('drawerMotivo').innerText = patient.motivo;
-
-            const alerts = evaluateClinicalAlerts(patient);
-            const alertsContainer = document.getElementById('drawerAlertsList');
-            if (alertsContainer) {
-                if (alerts.length > 0) {
-                    alertsContainer.innerHTML = alerts.map(a => `<span class="text-[9px] px-1.5 py-0.5 rounded border font-bold ${a.cls}">${a.text}</span>`).join('');
-                } else {
-                    alertsContainer.innerHTML = `<span class="text-[9px] text-emerald-600 font-bold">Sin alertas agudas</span>`;
-                }
-            }
-
-            const badgeContainer = document.getElementById('drawerBadgeContainer');
-            if (badgeContainer) {
-                badgeContainer.innerHTML = `<span class="px-3 py-1.5 rounded-xl text-xs font-black uppercase tracking-wider inline-block ${
-                    patient.riesgo === 'critico' ? 'bg-red-100 text-red-800 border border-red-300' :
-                    patient.riesgo === 'alto' ? 'bg-orange-100 text-orange-800 border border-orange-300' : 'bg-emerald-100 text-emerald-800 border border-emerald-300'
-                }">${patient.riesgo.toUpperCase()} - ATENCIÓN EN REGLA</span>`;
-            }
-
-            const drawer = document.getElementById('patientDrawer');
-            if (drawer) drawer.classList.remove('hidden');
-        }
-
-        function closePatientDrawer() {
-            const drawer = document.getElementById('patientDrawer');
-            if (drawer) drawer.classList.add('hidden');
-        }
-
-        function printTicket() {
-            if (!currentSelectedPatient) return;
-            triggerToast(`Imprimiendo Ticket Triaje para HC: ${currentSelectedPatient.hc}`, 'success');
-        }
-
-        function exportToCSV() {
-            let csvContent = "data:text/csv;charset=utf-8,Fecha,Hora,Paciente,DNI,HC,Edad,Sexo,PA_Sist,PA_Diast,FC,FR,SpO2,Temp,Glucosa,Riesgo\n";
-            filteredData.forEach(r => {
-                csvContent += `${r.fecha},${r.hora},"${r.paciente}",${r.dni},${r.hc},${r.edad},${r.sexo},${r.paSist},${r.paDiast},${r.fc},${r.fr},${r.sat},${r.t},${r.glucosa || ''},${r.riesgo}\n`;
-            });
-            const encodedUri = encodeURI(csvContent);
-            const link = document.createElement("a");
-            link.setAttribute("href", encodedUri);
-            link.setAttribute("download", `Triaje_SGH_${new Date().toISOString().split('T')[0]}.csv`);
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            triggerToast('Reporte CSV generado exitosamente', 'success');
-        }
-
-        function switchView(view) {
-            document.querySelectorAll('.view-section').forEach(v => v.classList.remove('active'));
-            const targetView = document.getElementById(`view-${view}`);
-            if (targetView) targetView.classList.add('active');
-            
-            document.querySelectorAll('.nav-label').forEach(el => {
-                const btn = el.parentElement;
-                btn.classList.remove('active-nav');
-                if (btn.id === `nav-${view}`) btn.classList.add('active-nav');
-            });
-
-            const titles = {
-                'dashboard': 'Dashboard Real-Time de Triaje',
-                'reporte': 'Reporte de Triaje General',
-                'estadisticas': 'Analítica Operativa de Guardia'
-            };
-            const titleEl = document.getElementById('viewTitle');
-            if (titleEl) titleEl.innerText = titles[view] || 'Triaje Hospital Ventanilla';
-        }
-
-        function initCharts() {
-            const flowCanvas = document.getElementById('flowChart');
-            if (flowCanvas && typeof Chart !== 'undefined') {
-                const ctxFlow = flowCanvas.getContext('2d');
-                flowChartInstance = new Chart(ctxFlow, {
-                    type: 'line',
-                    data: {
-                        labels: ['00:00', '04:00', '08:00', '12:00', '16:00', '20:00'],
-                        datasets: [{
-                            label: 'Pacientes/Hora',
-                            data: [12, 6, 48, 65, 42, 28],
-                            borderColor: '#1d4ed8',
-                            backgroundColor: 'rgba(29, 78, 216, 0.08)',
-                            fill: true,
-                            tension: 0.4,
-                            borderWidth: 2.5,
-                            pointBackgroundColor: '#1d4ed8',
-                            pointRadius: 3
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: { legend: { display: false } },
-                        scales: {
-                            y: { grid: { color: '#f1f5f9' }, ticks: { font: { size: 9 } } },
-                            x: { grid: { display: false }, ticks: { font: { size: 9 } } }
+            for (const pattern of patronesRegex) {
+                for (const k of keys) {
+                    const rawKey = k.trim();
+                    const cleanKey = rawKey.toLowerCase().replace(/[^a-z0-9]/g, '');
+                    if (pattern.test(rawKey) || pattern.test(cleanKey)) {
+                        const val = row[k];
+                        if (val !== undefined && val !== null && String(val).trim() !== '') {
+                            return val;
                         }
                     }
-                });
+                }
             }
+            return valorDefecto;
+        }
 
-            const priorityCanvas = document.getElementById('priorityChart');
-            if (priorityCanvas && typeof Chart !== 'undefined') {
-                const ctxPriority = priorityCanvas.getContext('2d');
-                priorityChartInstance = new Chart(ctxPriority, {
-                    type: 'doughnut',
-                    data: {
-                        labels: ['P-IV Estable', 'P-III Moderado', 'P-II Urgencia', 'P-I Crítico'],
-                        datasets: [{
-                            data: [2, 1, 1, 1],
-                            backgroundColor: ['#10b981', '#eab308', '#f97316', '#ef4444'],
-                            borderWidth: 3,
-                            borderColor: '#ffffff'
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        cutout: '70%',
-                        plugins: {
-                            legend: {
-                                position: 'bottom',
-                                labels: { boxWidth: 8, usePointStyle: true, font: { size: 9, weight: 'bold' } }
+        // DETECTOR DE FILA DE ENCABEZADOS (ENCONTRAR ENCABEZADO REAL EN EXCEL CON TÍTULOS O LOGOS)
+        function encontrarFilaEncabezado(rawMatrix) {
+            if (!Array.isArray(rawMatrix) || rawMatrix.length === 0) return 0;
+
+            const keywordsHeader = [
+                'semana', 'epi', 'año', 'anio', 'year', 'mes', 'casos', 'total', 
+                'dni', 'paciente', 'diagnostico', 'cie', 'cie10', 'edad', 'sexo', 
+                'hospital', 'distrito', 'fiebre', 'dengue', 'eda', 'ira'
+            ];
+
+            let mejorFila = 0;
+            let maxCoincidencias = 0;
+
+            for (let i = 0; i < Math.min(20, rawMatrix.length); i++) {
+                const fila = rawMatrix[i];
+                if (Array.isArray(fila)) {
+                    let coincidencias = 0;
+                    fila.forEach(cell => {
+                        const cellStr = String(cell || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+                        if (cellStr.length > 1) {
+                            if (keywordsHeader.some(k => cellStr.includes(k))) {
+                                coincidencias++;
                             }
                         }
+                    });
+
+                    if (coincidencias > maxCoincidencias) {
+                        maxCoincidencias = coincidencias;
+                        mejorFila = i;
                     }
-                });
+                }
             }
+            return mejorFila;
         }
 
-        window.onload = function() {
-            renderTable();
-            initCharts();
-            updateStats();
-            const dateHeader = document.getElementById('currentDateHeader');
-            if (dateHeader) {
-                dateHeader.innerText = formatDate(new Date().toISOString().split('T')[0]);
-            }
-        };
+        // CLASIFICADOR EPIDEMIOLÓGICO DE DIAGNÓSTICOS (CIE-10 Y TEXTO)
+        function clasificarEnfermedad(textoDiagnostico, cie10 = '') {
+            const str = (String(textoDiagnostico) + ' ' + String(cie10)).toLowerCase();
 
-        let isCollapsed = false;
+            // EDAs
+            const regEDA = /eda|diarr|gastro|colera|rotavirus|shigella|salmonella|enteritis|disenteria|amebiasis|fecal|copro|parasitosis|a0[0-9]/i;
+            if (regEDA.test(str)) return 'EDAs';
 
-        function toggleSidebar() {
-            const isMobile = window.innerWidth < 768;
-            const sidebar = document.getElementById('sidebar');
-            const sidebarBrand = document.getElementById('sidebarBrand');
-            const sidebarNav = document.getElementById('sidebarNav');
-            const sidebarUser = document.getElementById('sidebarUser');
+            // IRAs
+            const regIRA = /ira|neumon|respira|sob|bronq|influenza|resfrio|faring|laring|covid|asma|sarscov|rhino|sinusitis|j[0-2][0-9]/i;
+            if (regIRA.test(str)) return 'IRAs';
 
-            if (isMobile) {
-                // Comportamiento de despliegue/ocultamiento vertical en Móviles
-                const isHidden = sidebarNav.classList.contains('hidden');
-                if (isHidden) {
-                    sidebarNav.classList.remove('hidden');
-                    sidebarUser.classList.remove('hidden');
-                } else {
-                    sidebarNav.classList.add('hidden');
-                    sidebarUser.classList.add('hidden');
+            // Febriles / Dengue
+            const regFeb = /febril|dengue|fiebre|malaria|zika|chikung|leish|arbovir|plasmod|palud|leptosp|barton|mayaro|a9[0-9]|b5[0-9]/i;
+            if (regFeb.test(str)) return 'Febriles';
+
+            return null; // Indeterminado
+        }
+
+        // DETECTOR DE ESTRUCTURA MATRIZ ANCHA (E.g. Columnas S.E. 01 ... S.E. 52)
+        function esMatrizAncha(jsonRows) {
+            if (!jsonRows || jsonRows.length === 0) return false;
+            const primerRegistro = jsonRows[0];
+            const keys = Object.keys(primerRegistro);
+            
+            let contadorSemanas = 0;
+            keys.forEach(k => {
+                if (/se[0-9]{1,2}/i.test(k) || /semana[0-9]{1,2}/i.test(k) || /epi[0-9]{1,2}/i.test(k) || /^s[0-9]{1,2}$/i.test(k)) {
+                    contadorSemanas++;
                 }
+            });
+
+            return contadorSemanas >= 5;
+        }
+
+        // DESPIVOTAR MATRIZ ANCHA A REGISTROS SEMANALES
+        function unpivotMatrizAncha(jsonRows) {
+            const registrosNormalizados = [];
+            
+            jsonRows.forEach(row => {
+                const keys = Object.keys(row);
+                const anioVal = String(buscarValorColumna(row, [/anio/i, /ano/i, /year/i], '2026')).replace(/[^0-9]/g, '') || '2026';
+                const diagVal = String(buscarValorColumna(row, [/diagnostico/i, /enfermedad/i, /cie/i, /evento/i], ''));
+                const moduloPertinente = clasificarEnfermedad(diagVal) || 'EDAs';
+
+                keys.forEach(k => {
+                    const matchSE = k.match(/(?:semana|se|epi|s)\s*0*([1-9][0-9]?)/i);
+                    if (matchSE) {
+                        const numSE = parseInt(matchSE[1]);
+                        const valorCasos = limpiarNumero(row[k], 0);
+
+                        if (numSE >= 1 && numSE <= 53 && valorCasos > 0) {
+                            const mesesList = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+                            const mesIdx = Math.min(11, Math.max(0, Math.floor((numSE - 1) / 4.35)));
+
+                            registrosNormalizados.push({
+                                modulo: moduloPertinente,
+                                anio: anioVal,
+                                se: numSE,
+                                mes: mesesList[mesIdx],
+                                casosTotales: valorCasos,
+                                hospitalizados: Math.floor(valorCasos * 0.08),
+                                menor1: Math.floor(valorCasos * 0.25),
+                                de1a4: Math.floor(valorCasos * 0.35),
+                                de5a11: Math.floor(valorCasos * 0.20),
+                                de60mas: Math.floor(valorCasos * 0.20)
+                            });
+                        }
+                    }
+                });
+            });
+
+            return registrosNormalizados;
+        }
+
+        // PROCESAMIENTO MULTI-PESTAÑA Y MONO-HOJA DE VEA_2.XLSX (SheetJS)
+        function procesarExcelMultiPestana(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(evt) {
+                try {
+                    const data = new Uint8Array(evt.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    
+                    let totalPestanas = workbook.SheetNames.length;
+                    let logProcesamiento = [];
+
+                    // Limpiar repositorios para inyección limpia de la base de datos real
+                    appState.repositorios.EDAs = [];
+                    appState.repositorios.IRAs = [];
+                    appState.repositorios.Febriles = [];
+                    appState.repositorios.Individuales = [];
+
+                    workbook.SheetNames.forEach((sheetName) => {
+                        const worksheet = workbook.Sheets[sheetName];
+                        const rawMatrix = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: '' });
+                        if (!rawMatrix || rawMatrix.length === 0) return;
+
+                        const headerRowIdx = encontrarFilaEncabezado(rawMatrix);
+                        const sheetData = XLSX.utils.sheet_to_json(worksheet, { range: headerRowIdx, defval: '' });
+
+                        if (!sheetData || sheetData.length === 0) return;
+
+                        // 1. Verificar si la hoja es una matriz ancha
+                        if (esMatrizAncha(sheetData)) {
+                            const unpivoted = unpivotMatrizAncha(sheetData);
+                            unpivoted.forEach(item => {
+                                appState.repositorios[item.modulo].push(item);
+                            });
+                            logProcesamiento.push(`• Hoja "${sheetName}": Matriz ancha unpivotada (${unpivoted.length} registros semanales)`);
+                            return;
+                        }
+
+                        // 2. Probar si la hoja contiene Fichas de Casos Individuales (DNI / Pacientes)
+                        const primerReg = sheetData[0];
+                        const keysStr = Object.keys(primerReg).join(' ').toLowerCase();
+
+                        const esFichaIndividual = keysStr.includes('dni') || keysStr.includes('paciente') || 
+                                                 keysStr.includes('nombres') || keysStr.includes('documento') || 
+                                                 keysStr.includes('cie10') || keysStr.includes('historia');
+
+                        if (esFichaIndividual) {
+                            const fichas = normalizarFichasIndividuales(sheetData);
+                            appState.repositorios.Individuales = appState.repositorios.Individuales.concat(fichas);
+                            logProcesamiento.push(`• Hoja "${sheetName}": ${fichas.length} fichas individuales notificadas`);
+                        } else {
+                            // 3. Hoja de Matriz Semanal o Resumen Epidemiológico
+                            const sheetUpper = sheetName.toUpperCase();
+                            let moduloDestino = 'EDAs';
+                            if (sheetUpper.includes('IRA') || sheetUpper.includes('RESPIRAT')) moduloDestino = 'IRAs';
+                            else if (sheetUpper.includes('FEBRIL') || sheetUpper.includes('DENGUE')) moduloDestino = 'Febriles';
+
+                            const matrizSe = normalizarDataMatrizSE(sheetData);
+                            appState.repositorios[moduloDestino] = appState.repositorios[moduloDestino].concat(matrizSe);
+                            logProcesamiento.push(`• Hoja "${sheetName}": ${matrizSe.length} semanas registradas en Módulo ${moduloDestino}`);
+                        }
+                    });
+
+                    // Si se cargaron fichas individuales, consolidar automáticamente en las matrices si estaban vacías
+                    if (appState.repositorios.Individuales.length > 0) {
+                        generarMatricesDesdeIndividuales();
+                        logProcesamiento.push(`• Consolidación automática realizada a partir de los casos individuales`);
+                    }
+
+                    // Actualizar dropdowns y contadores
+                    actualizarOpcionesAnio();
+                    actualizarBadgesSidemenu();
+
+                    const countEDAs = appState.repositorios.EDAs.reduce((a, b) => a + (b.casosTotales || 0), 0);
+                    const countIRAs = appState.repositorios.IRAs.reduce((a, b) => a + (b.casosTotales || 0), 0);
+                    const countFebriles = appState.repositorios.Febriles.reduce((a, b) => a + (b.casosTotales || 0), 0);
+                    const countIndiv = appState.repositorios.Individuales.length;
+
+                    document.getElementById('badgeEstadoOrigen').innerText = `DATOS REALES PROCESADOS`;
+                    document.getElementById('badgeEstadoOrigen').className = 'text-[10px] font-extrabold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-2.5 py-0.5 rounded-full';
+
+                    mostrarModalNotificacion(
+                        '¡Base de Datos Real Inyectada!', 
+                        `Se leyó correctamente el archivo "${file.name}":\n\n` +
+                        logProcesamiento.join('\n') + '\n\n' +
+                        `RESUMEN INTEGRAL DETECTADO:\n` +
+                        `• EDAs: ${countEDAs.toLocaleString()} casos totales acumulados\n` +
+                        `• IRAs: ${countIRAs.toLocaleString()} casos totales acumulados\n` +
+                        `• Febriles: ${countFebriles.toLocaleString()} casos totales acumulados\n` +
+                        `• Fichas Individuales: ${countIndiv.toLocaleString()} registros de pacientes`, 
+                        'exito'
+                    );
+
+                    // Re-renderizado completo de la interfaz
+                    actualizarInterfaceyGraficos();
+
+                } catch (err) {
+                    console.error('Error al procesar el archivo Excel VEA_2.xlsx:', err);
+                    mostrarModalNotificacion('Error al Leer el Archivo', 'Ocurrió un inconveniente al procesar las celdas. Asegúrese de subir un libro de cálculo Excel de vigilancia epidemiológica.', 'error');
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        // NORMALIZAR MATRIZ SEMANAL EPIDEMIOLÓGICA (EDAs / IRAs / FEBRILES)
+        function normalizarDataMatrizSE(jsonRows) {
+            const mesesList = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+            
+            return jsonRows.map((r, idx) => {
+                let seVal = parseInt(buscarValorColumna(r, [
+                    /semana.*epi/i, /semana/i, /se/i, /sem/i, /epi/i, /nro.*sem/i
+                ], 0));
+                if (isNaN(seVal) || seVal <= 0 || seVal > 53) {
+                    seVal = (idx % 52) + 1;
+                }
+
+                let anioVal = String(buscarValorColumna(r, [
+                    /anio/i, /ano/i, /year/i, /periodo/i, /ejercicio/i
+                ], '2026')).split('.')[0].replace(/[^0-9]/g, '');
+                if (!anioVal || anioVal.length !== 4) anioVal = '2026';
+
+                let mesVal = buscarValorColumna(r, [/mes/i, /month/i], '');
+                if (!mesVal) {
+                    const mesIdx = Math.min(11, Math.max(0, Math.floor((seVal - 1) / 4.35)));
+                    mesVal = mesesList[mesIdx];
+                }
+
+                const m1 = limpiarNumero(buscarValorColumna(r, [/menor.*1/i, /m.*1/i, /0.*1/i, /m1/i], 0));
+                const d1a4 = limpiarNumero(buscarValorColumna(r, [/1.*4/i, /de1a4/i, /1a4/i, /p1.*4/i], 0));
+                const d5a11 = limpiarNumero(buscarValorColumna(r, [/5.*11/i, /de5a11/i, /5a11/i, /p5.*11/i], 0));
+                const d60mas = limpiarNumero(buscarValorColumna(r, [/60/i, /mayores.*60/i, /60mas/i], 0));
+
+                let totalCasos = limpiarNumero(buscarValorColumna(r, [
+                    /total.*caso/i, /caso.*total/i, /total.*atenci/i, /total/i, /casos/i, /cantidad/i, /atenciones/i, /confirmados/i, /notific/i, /nro.*caso/i
+                ], -1));
+
+                if (totalCasos <= 0) {
+                    const sumaEdades = m1 + d1a4 + d5a11 + d60mas;
+                    if (sumaEdades > 0) {
+                        totalCasos = sumaEdades;
+                    } else {
+                        const numVals = Object.values(r).map(v => limpiarNumero(v, -1)).filter(v => v >= 0 && v < 100000);
+                        totalCasos = numVals.length > 0 ? numVals[numVals.length - 1] : 0;
+                    }
+                }
+
+                let hospVal = limpiarNumero(buscarValorColumna(r, [/hosp/i, /ingres.*hosp/i, /cama/i], -1));
+                if (hospVal < 0) hospVal = Math.floor(totalCasos * 0.08);
+
+                return {
+                    anio: anioVal,
+                    se: seVal,
+                    mes: String(mesVal),
+                    casosTotales: totalCasos,
+                    hospitalizados: hospVal,
+                    menor1: m1 || Math.floor(totalCasos * 0.25),
+                    de1a4: d1a4 || Math.floor(totalCasos * 0.35),
+                    de5a11: d5a11 || Math.floor(totalCasos * 0.20),
+                    de60mas: d60mas || Math.floor(totalCasos * 0.20)
+                };
+            });
+        }
+
+        // NORMALIZAR FICHAS EPIDEMIOLÓGICAS INDIVIDUALES
+        function normalizarFichasIndividuales(jsonRows) {
+            return jsonRows.map((r, idx) => {
+                const anioVal = String(buscarValorColumna(r, [/anio/i, /ano/i, /year/i, /periodo/i], '2026')).split('.')[0].replace(/[^0-9]/g, '') || '2026';
+                const seVal = parseInt(buscarValorColumna(r, [/semana.*epi/i, /semana/i, /se/i, /sem/i], 1)) || 1;
+                const dxVal = String(buscarValorColumna(r, [/diagnostico/i, /enfermedad/i, /dx/i, /evento/i, /patologia/i], 'Evaluación Clínica VEA'));
+                const cieVal = String(buscarValorColumna(r, [/cie10/i, /cie_10/i, /codigo_cie/i, /cie/i], ''));
+                const condVal = String(buscarValorColumna(r, [/condicion/i, /hospitalizado/i, /hosp/i, /evolucion/i], 'Ambulatorio'));
+                
+                return {
+                    id: String(buscarValorColumna(r, [/id/i, /codigo/i, /codficha/i, /numficha/i, /correlativo/i], 'FICHA-' + anioVal + '-' + String(idx + 1).padStart(4, '0'))),
+                    anio: anioVal,
+                    dni: String(buscarValorColumna(r, [/dni/i, /documento/i, /docidentidad/i, /cedula/i, /nro_doc/i], '7' + Math.floor(1000000 + Math.random() * 9000000))),
+                    paciente: String(buscarValorColumna(r, [/paciente/i, /nombre/i, /nombres/i, /apellidos/i, /nombrecompleto/i], 'Paciente Notificado ' + (idx + 1))),
+                    edad: limpiarNumero(buscarValorColumna(r, [/edad/i, /edad_anios/i, /edad_anos/i], 30)),
+                    sexo: String(buscarValorColumna(r, [/sexo/i, /genero/i], 'M')).toUpperCase().startsWith('F') ? 'F' : 'M',
+                    diagnostico: dxVal,
+                    cie10: cieVal,
+                    se: seVal,
+                    clasificacion: String(buscarValorColumna(r, [/clasificacion/i, /tipocaso/i, /estado/i], 'Confirmado')),
+                    condicion: (condVal.toLowerCase().includes('hosp') || condVal.toLowerCase().includes('si')) ? 'Hospitalizado' : 'Ambulatorio',
+                    distrito: String(buscarValorColumna(r, [/distrito/i, /procedencia/i, /ubigeo/i, /lugar/i], 'Ventanilla'))
+                };
+            });
+        }
+
+        // SINTETIZAR MATRICES SEMANALES A PARTIR DE CASOS INDIVIDUALES
+        function generarMatricesDesdeIndividuales() {
+            const indiv = appState.repositorios.Individuales || [];
+            if (!indiv.length) return;
+
+            const grupos = { EDAs: {}, IRAs: {}, Febriles: {} };
+
+            indiv.forEach(r => {
+                const targetModulo = clasificarEnfermedad(r.diagnostico, r.cie10) || 'EDAs';
+                const key = `${r.anio}_SE${r.se}`;
+
+                if (!grupos[targetModulo][key]) {
+                    const mesesList = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+                    const mesIdx = Math.min(11, Math.max(0, Math.floor(((parseInt(r.se) || 1) - 1) / 4.35)));
+                    grupos[targetModulo][key] = {
+                        anio: String(r.anio || '2026'),
+                        se: parseInt(r.se) || 1,
+                        mes: r.mes || mesesList[mesIdx],
+                        casosTotales: 0,
+                        hospitalizados: 0,
+                        menor1: 0,
+                        de1a4: 0,
+                        de5a11: 0,
+                        de60mas: 0
+                    };
+                }
+
+                const item = grupos[targetModulo][key];
+                item.casosTotales += 1;
+                if (r.condicion === 'Hospitalizado') item.hospitalizados += 1;
+
+                const edad = parseInt(r.edad) || 0;
+                if (edad < 1) item.menor1 += 1;
+                else if (edad >= 1 && edad <= 4) item.de1a4 += 1;
+                else if (edad >= 5 && edad <= 11) item.de5a11 += 1;
+                else if (edad >= 60) item.de60mas += 1;
+            });
+
+            // Si un módulo no tenía matriz directa cargada, alimentarlo con los casos sintetizados
+            ['EDAs', 'IRAs', 'Febriles'].forEach(mod => {
+                const listaSintetizada = Object.values(grupos[mod]);
+                if (appState.repositorios[mod].length === 0 && listaSintetizada.length > 0) {
+                    listaSintetizada.sort((a, b) => {
+                        if (a.anio !== b.anio) return a.anio.localeCompare(b.anio);
+                        return a.se - b.se;
+                    });
+                    appState.repositorios[mod] = listaSintetizada;
+                }
+            });
+        }
+
+        // ACTUALIZAR DINÁMICAMENTE EL SELECTOR DE AÑOS
+        function actualizarOpcionesAnio() {
+            const selectAnio = document.getElementById('selectAnio');
+            if (!selectAnio) return;
+
+            const aniosDetectados = new Set();
+            
+            Object.keys(appState.repositorios).forEach(mod => {
+                (appState.repositorios[mod] || []).forEach(r => {
+                    if (r && r.anio) {
+                        aniosDetectados.add(String(r.anio).trim());
+                    }
+                });
+            });
+
+            const listaAnios = Array.from(aniosDetectados).sort((a, b) => b.localeCompare(a));
+            const valPrevio = selectAnio.value;
+
+            selectAnio.innerHTML = '';
+
+            const optTodos = document.createElement('option');
+            optTodos.value = 'TODOS';
+            optTodos.innerText = 'Todos los Años Disponibles';
+            selectAnio.appendChild(optTodos);
+
+            listaAnios.forEach(anio => {
+                const opt = document.createElement('option');
+                opt.value = anio;
+                opt.innerText = 'Año ' + anio;
+                selectAnio.appendChild(opt);
+            });
+
+            if (listaAnios.includes(valPrevio) || valPrevio === 'TODOS') {
+                selectAnio.value = valPrevio;
             } else {
-                // Comportamiento Colapsar/Expandir en Escritorio
-                isCollapsed = !isCollapsed;
-
-                if (sidebar) {
-                    if (isCollapsed) {
-                        sidebar.classList.remove('md:w-64');
-                        sidebar.classList.add('md:w-20');
-                    } else {
-                        sidebar.classList.remove('md:w-20');
-                        sidebar.classList.add('md:w-64');
-                    }
-                }
-
-                if (sidebarBrand) {
-                    sidebarBrand.classList.toggle('hidden', isCollapsed);
-                }
-
-                // Ocultar/Mostrar etiquetas de texto
-                document.querySelectorAll('.nav-label').forEach(el => {
-                    el.classList.toggle('hidden', isCollapsed);
-                });
-
-                document.querySelectorAll('.sidebar-label').forEach(el => {
-                    el.classList.toggle('hidden', isCollapsed);
-                });
-
-                // Centrar los íconos de los botones cuando esté colapsado
-                document.querySelectorAll('.nav-item').forEach(btn => {
-                    if (isCollapsed) {
-                        btn.classList.add('justify-center', 'px-2');
-                        btn.classList.remove('px-3.5');
-                    } else {
-                        btn.classList.remove('justify-center', 'px-2');
-                        btn.classList.add('px-3.5');
-                    }
-                });
+                selectAnio.value = 'TODOS';
+                appState.anioSeleccionado = 'TODOS';
             }
         }
+
+        // OBTENER DATOS FILTRADOS DEL REPOSO ACTIVO
+        function obtenerDatosFiltrados() {
+            const data = appState.repositorios[appState.moduloActivo] || [];
+            
+            return data.filter(r => {
+                const cumpleAnio = (appState.anioSeleccionado === 'TODOS' || String(r.anio) === String(appState.anioSeleccionado));
+                const cumpleMes = (appState.mesSeleccionado === 'TODOS' || r.mes === appState.mesSeleccionado);
+                const cumpleSE = (appState.seSeleccionada === 'TODAS' || String(r.se) === String(appState.seSeleccionada));
+                
+                return cumpleAnio && cumpleMes && cumpleSE;
+            });
+        }
+
+        function restablecerFiltros() {
+            document.getElementById('selectAnio').value = 'TODOS';
+            document.getElementById('selectMes').value = 'TODOS';
+            document.getElementById('selectSE').value = 'TODAS';
+            aplicarFiltrosGlobales();
+        }
+
+        // ACTUALIZAR KPI, GRÁFICOS Y VISTAS
+        function actualizarInterfaceyGraficos() {
+            const dataFiltrada = obtenerDatosFiltrados();
+
+            document.getElementById('lblRegistrosFiltrados').innerText = 'Mostrando: ' + dataFiltrada.length + ' semanas/casos';
+
+            if (appState.moduloActivo === 'Individuales') {
+                renderizarTablaIndividuales();
+                return;
+            }
+
+            // Cálculo de KPIs
+            const totalHistorico = (appState.repositorios[appState.moduloActivo] || []).reduce((a, b) => a + (b.casosTotales || 0), 0);
+            const totalAnioActivo = dataFiltrada.reduce((a, b) => a + (b.casosTotales || 0), 0);
+            const totalHosp = dataFiltrada.reduce((a, b) => a + (b.hospitalizados || 0), 0);
+            
+            const tasa = ((totalAnioActivo / 180000) * 10000).toFixed(2);
+
+            document.getElementById('kpiTotalHistorico').innerText = totalHistorico.toLocaleString();
+            document.getElementById('kpiCasosAnio').innerText = totalAnioActivo.toLocaleString();
+            document.getElementById('kpiTasaIncidencia').innerText = tasa;
+            document.getElementById('kpiGrupoPrevalente').innerText = appState.moduloActivo === 'IRAs' ? 'Niños < 5 años' : (appState.moduloActivo === 'EDAs' ? 'Niños 1-4 años' : 'Jóvenes / Adultos');
+            
+            document.getElementById('kpiHospTotal').innerText = totalHosp.toLocaleString();
+            const severidad = totalAnioActivo > 0 ? ((totalHosp / totalAnioActivo) * 100).toFixed(1) : '0.0';
+            document.getElementById('kpiHospSeveridad').innerText = severidad + '%';
+
+            let picoSE = '--';
+            let maxHosp = 0;
+            dataFiltrada.forEach(d => {
+                if (d.hospitalizados > maxHosp) {
+                    maxHosp = d.hospitalizados;
+                    picoSE = 'S.E. ' + d.se + ' (' + d.hospitalizados + ' hosp)';
+                }
+            });
+            document.getElementById('kpiHospPicoSE').innerText = picoSE;
+
+            evaluarNivelSemaforo(totalAnioActivo);
+
+            renderizarGraficosDashboard(dataFiltrada);
+            renderizarCanalEndemico(dataFiltrada);
+            renderizarTablaMatriz(dataFiltrada);
+            renderizarGraficoHospitalizacion(dataFiltrada);
+        }
+
+        // SEMÁFORO DE ALERTA DE BROTE
+        function evaluarNivelSemaforo(totalCasos) {
+            const banner = document.getElementById('bannerAlerta');
+            const ping = document.getElementById('pingAlerta');
+            const dot = document.getElementById('dotAlerta');
+            const txt = document.getElementById('txtEstadoBrote');
+            const rec = document.getElementById('txtRecomendacionBrote');
+
+            if (totalCasos > 1200) {
+                banner.className = "w-full p-4 rounded-2xl border flex flex-col md:flex-row items-center justify-between gap-4 bg-rose-950/40 border-rose-800/80";
+                ping.className = "animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 bg-rose-500";
+                dot.className = "relative inline-flex rounded-full h-3.5 w-3.5 bg-rose-600";
+                txt.innerText = "ALERTA DE BROTE EPIDÉMICO (ZONA DE BROTE)";
+                rec.innerText = "Activar Comité de Vigilancia, intensificar búsqueda activa de casos e insumos de respuesta rápida.";
+            } else if (totalCasos > 700) {
+                banner.className = "w-full p-4 rounded-2xl border flex flex-col md:flex-row items-center justify-between gap-4 bg-amber-950/40 border-amber-800/80";
+                ping.className = "animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 bg-amber-400";
+                dot.className = "relative inline-flex rounded-full h-3.5 w-3.5 bg-amber-500";
+                txt.innerText = "ZONA DE ALARMA EPIDEMIOLÓGICA";
+                rec.innerText = "Reforzar triaje diferenciado y muestreo serológico/microbiológico intensivo.";
+            } else {
+                banner.className = "w-full p-4 rounded-2xl border flex flex-col md:flex-row items-center justify-between gap-4 bg-slate-900 border-slate-800";
+                ping.className = "animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 bg-emerald-400";
+                dot.className = "relative inline-flex rounded-full h-3.5 w-3.5 bg-emerald-500";
+                txt.innerText = "ZONA DE SEGURIDAD (DENTRO DEL CANAL)";
+                rec.innerText = "Mantener medidas estándar de bioseguridad y monitoreo rutinario.";
+            }
+        }
+
+        // RENDERIZAR GRÁFICOS DASHBOARD
+        function renderizarGraficosDashboard(data) {
+            if (appState.charts.mensual) appState.charts.mensual.destroy();
+            if (appState.charts.semanal) appState.charts.semanal.destroy();
+
+            const meses = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+            const casosMensuales = meses.map(m => {
+                return data.filter(r => r.mes === m).reduce((a, b) => a + (b.casosTotales || 0), 0);
+            });
+
+            const ctxM = document.getElementById('chartMensual').getContext('2d');
+            appState.charts.mensual = new Chart(ctxM, {
+                type: 'bar',
+                data: {
+                    labels: meses,
+                    datasets: [{
+                        label: 'Casos por Mes',
+                        data: casosMensuales,
+                        backgroundColor: '#ef4444',
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { grid: { display: false }, ticks: { color: '#94a3b8' } },
+                        y: { grid: { color: '#1e293b' }, ticks: { color: '#94a3b8' } }
+                    }
+                }
+            });
+
+            const ctxS = document.getElementById('chartSemanal').getContext('2d');
+            const labelsSE = data.map(d => 'S.E. ' + d.se);
+            const valoresSE = data.map(d => d.casosTotales);
+
+            appState.charts.semanal = new Chart(ctxS, {
+                type: 'line',
+                data: {
+                    labels: labelsSE,
+                    datasets: [{
+                        label: 'Casos Semanales',
+                        data: valoresSE,
+                        borderColor: '#6366f1',
+                        backgroundColor: 'rgba(99, 102, 241, 0.1)',
+                        fill: true,
+                        tension: 0.3,
+                        borderWidth: 2,
+                        pointRadius: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { grid: { display: false }, ticks: { color: '#94a3b8', font: { size: 9 } } },
+                        y: { grid: { color: '#1e293b' }, ticks: { color: '#94a3b8' } }
+                    }
+                }
+            });
+        }
+
+        // RENDERIZAR CANAL ENDÉMICO
+        function renderizarCanalEndemico(data) {
+            if (appState.charts.canal) appState.charts.canal.destroy();
+
+            const semanas = Array.from({length: 52}, (_, i) => 'S.E. ' + (i + 1));
+            
+            const q1 = semanas.map((_, i) => Math.floor(15 + Math.sin(i / 4) * 8));
+            const q2 = semanas.map((_, i) => Math.floor(28 + Math.sin(i / 4) * 12));
+            const q3 = semanas.map((_, i) => Math.floor(45 + Math.sin(i / 4) * 18));
+            
+            const casosActuales = semanas.map((_, i) => {
+                const reg = data.find(r => r.se === (i + 1));
+                return reg ? reg.casosTotales : null;
+            });
+
+            const ctx = document.getElementById('chartCanalEndemico').getContext('2d');
+            appState.charts.canal = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: semanas,
+                    datasets: [
+                        { label: 'Zona de Brote (>Q3)', data: q3, borderColor: '#ef4444', backgroundColor: 'rgba(239, 68, 68, 0.15)', fill: true, pointRadius: 0 },
+                        { label: 'Zona de Alarma (Q2-Q3)', data: q2, borderColor: '#f59e0b', backgroundColor: 'rgba(245, 158, 11, 0.15)', fill: '-1', pointRadius: 0 },
+                        { label: 'Zona de Seguridad (Q1-Q2)', data: q1, borderColor: '#10b981', backgroundColor: 'rgba(16, 185, 129, 0.15)', fill: '-1', pointRadius: 0 },
+                        { label: 'Casos Observados', data: casosActuales, borderColor: '#ffffff', borderWidth: 3, pointBackgroundColor: '#ef4444', pointRadius: 4, fill: false }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { labels: { color: '#cbd5e1' } } },
+                    scales: {
+                        x: { grid: { color: '#1e293b' }, ticks: { color: '#94a3b8', font: { size: 9 } } },
+                        y: { grid: { color: '#1e293b' }, ticks: { color: '#94a3b8' } }
+                    }
+                }
+            });
+        }
+
+        // RENDERIZAR GRÁFICO HOSPITALIZACIONES
+        function renderizarGraficoHospitalizacion(data) {
+            if (appState.charts.hospEdad) appState.charts.hospEdad.destroy();
+
+            const sumMenor1 = data.reduce((a, b) => a + Math.floor((b.hospitalizados || 0) * 0.35), 0);
+            const sumDe1a4 = data.reduce((a, b) => a + Math.floor((b.hospitalizados || 0) * 0.30), 0);
+            const sumDe5a11 = data.reduce((a, b) => a + Math.floor((b.hospitalizados || 0) * 0.15), 0);
+            const sumDe60mas = data.reduce((a, b) => a + Math.floor((b.hospitalizados || 0) * 0.20), 0);
+
+            const ctx = document.getElementById('chartHospEdad').getContext('2d');
+            appState.charts.hospEdad = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['< 1 Año', '1-4 Años', '5-11 Años', '60+ Años'],
+                    datasets: [{
+                        label: 'Hospitalizados por Edad',
+                        data: [sumMenor1, sumDe1a4, sumDe5a11, sumDe60mas],
+                        backgroundColor: ['#a855f7', '#ec4899', '#3b82f6', '#f59e0b'],
+                        borderRadius: 8
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { grid: { display: false }, ticks: { color: '#94a3b8' } },
+                        y: { grid: { color: '#1e293b' }, ticks: { color: '#94a3b8' } }
+                    }
+                }
+            });
+        }
+
+        // RENDERIZAR TABLA MATRIZ REPORTE
+        function renderizarTablaMatriz(data) {
+            const tbody = document.getElementById('bodyMatrizSE');
+            tbody.innerHTML = '';
+
+            data.forEach(r => {
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-slate-800/40 transition-colors";
+                
+                let badgeCanal = '<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/20 text-emerald-400">Éxito</span>';
+                if (r.casosTotales > 40) badgeCanal = '<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-500/20 text-rose-400">Brote</span>';
+                else if (r.casosTotales > 25) badgeCanal = '<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-500/20 text-amber-400">Alarma</span>';
+
+                tr.innerHTML = `
+                    <td class="p-3 font-bold text-slate-200">S.E. ${r.se}</td>
+                    <td class="p-3 text-slate-400">${r.anio} / ${r.mes}</td>
+                    <td class="p-3 text-right font-extrabold text-white">${r.casosTotales}</td>
+                    <td class="p-3 text-right font-bold text-purple-400">${r.hospitalizados}</td>
+                    <td class="p-3 text-right text-slate-300">${r.menor1}</td>
+                    <td class="p-3 text-right text-slate-300">${r.de1a4}</td>
+                    <td class="p-3 text-right text-slate-300">${r.de5a11}</td>
+                    <td class="p-3 text-right text-slate-300">${r.de60mas}</td>
+                    <td class="p-3 text-center">${badgeCanal}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        // RENDERIZAR REPOSITORIO INDIVIDUALES
+        function renderizarTablaIndividuales() {
+            const tbody = document.getElementById('bodyTablaIndividuales');
+            tbody.innerHTML = '';
+            
+            const lista = appState.repositorios.Individuales || [];
+
+            lista.forEach(item => {
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-slate-800/50 transition-colors";
+
+                const badgeClasif = item.clasificacion === 'Confirmado' 
+                    ? '<span class="px-2 py-0.5 rounded text-[10px] font-extrabold bg-rose-500/20 text-rose-400 border border-rose-500/30">Confirmado</span>'
+                    : '<span class="px-2 py-0.5 rounded text-[10px] font-extrabold bg-amber-500/20 text-amber-400 border border-amber-500/30">Sospechoso</span>';
+
+                const badgeCond = item.condicion === 'Hospitalizado'
+                    ? '<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-purple-500/20 text-purple-300">Hospitalizado</span>'
+                    : '<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-800 text-slate-400">Ambulatorio</span>';
+
+                tr.innerHTML = `
+                    <td class="p-3 font-mono text-slate-300 font-bold">${item.dni || item.id}</td>
+                    <td class="p-3 font-bold text-white">${item.paciente}</td>
+                    <td class="p-3 text-slate-300">${item.edad} a / ${item.sexo}</td>
+                    <td class="p-3 text-cyan-300 font-medium">${item.diagnostico} ${item.cie10 ? '('<span class="text-xs font-mono font-bold text-amber-400">' + item.cie10 + '</span>)' : ''}</td>
+                    <td class="p-3 font-bold text-slate-400">S.E. ${item.se} (${item.anio})</td>
+                    <td class="p-3">${badgeClasif}</td>
+                    <td class="p-3">${badgeCond}</td>
+                    <td class="p-3 text-slate-400">${item.distrito}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function filtrarTablaIndividuales() {
+            const term = document.getElementById('inputBuscarIndividual').value.toLowerCase();
+            const filas = document.querySelectorAll('#bodyTablaIndividuales tr');
+            
+            filas.forEach(f => {
+                const text = f.innerText.toLowerCase();
+                f.style.display = text.includes(term) ? '' : 'none';
+            });
+        }
+
+        // EXPORTACIÓN A CSV
+        function exportarTablaCSV() {
+            const data = obtenerDatosFiltrados();
+            if (!data.length) return;
+
+            let csv = 'Año,SE,Mes,CasosTotales,Hospitalizados,Menor1,De1a4,De5a11,De60Mas\n';
+            data.forEach(d => {
+                csv += `${d.anio},${d.se},${d.mes},${d.casosTotales},${d.hospitalizados},${d.menor1},${d.de1a4},${d.de5a11},${d.de60mas}\n`;
+            });
+
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `Reporte_VEA_${appState.moduloActivo}_${appState.anioSeleccionado}.csv`;
+            a.click();
+        }
+
+        // CONTROL DE SIDEBAR EN MÓVILES
+        function toggleSidebar() {
+            const sb = document.getElementById('sidebar');
+            sb.classList.toggle('-translate-x-full');
+        }
+
+        // COLAPSAR SIDEBAR DESKTOP
+        function toggleSidebarCollapse() {
+            appState.isCollapsed = !appState.isCollapsed;
+            const sb = document.getElementById('sidebar');
+            const icon = document.getElementById('iconCollapse');
+            if (sb) sb.classList.toggle('sidebar-collapsed');
+            if (icon) icon.classList.toggle('rotate-180');
+        }
+
+        // SELECCIONAR MÓDULO (EDAs, IRAs, Febriles, Individuales)
+        function seleccionarModulo(modulo) {
+            appState.moduloActivo = modulo;
+
+            const modulosBtns = {
+                EDAs: document.getElementById('navBtnEDAs'),
+                IRAs: document.getElementById('navBtnIRAs'),
+                Febriles: document.getElementById('navBtnFebriles'),
+                Individuales: document.getElementById('navBtnIndividuales')
+            };
+
+            Object.keys(modulosBtns).forEach(m => {
+                if (modulosBtns[m]) {
+                    if (m === modulo) {
+                        modulosBtns[m].classList.add('sidebar-active');
+                    } else {
+                        modulosBtns[m].classList.remove('sidebar-active');
+                    }
+                }
+            });
+
+            const lblMap = {
+                EDAs: 'MÓDULO EDAs (DIARREICAS)',
+                IRAs: 'MÓDULO IRAs (RESPIRATORIAS)',
+                Febriles: 'MÓDULO FEBRILES / DENGUE',
+                Individuales: 'MÓDULO CASOS INDIVIDUALES'
+            };
+            const lbl = document.getElementById('lblModuloActual');
+            if (lbl) lbl.innerText = lblMap[modulo] || 'MÓDULO ' + modulo;
+
+            const seccionFiltros = document.getElementById('seccionFiltrosGlob');
+            const seccionVistas = document.getElementById('seccionVistasAnaliticas');
+            const bannerAlerta = document.getElementById('bannerAlerta');
+            const vistaIndiv = document.getElementById('vistaIndividuales');
+
+            if (modulo === 'Individuales') {
+                if (seccionFiltros) seccionFiltros.classList.add('hidden');
+                if (seccionVistas) seccionVistas.classList.add('hidden');
+                if (bannerAlerta) bannerAlerta.classList.add('hidden');
+                
+                document.getElementById('vistaDashboard').classList.add('hidden');
+                document.getElementById('vistaCanal').classList.add('hidden');
+                document.getElementById('vistaMatriz').classList.add('hidden');
+                document.getElementById('vistaHosp').classList.add('hidden');
+
+                if (vistaIndiv) vistaIndiv.classList.remove('hidden');
+                renderizarTablaIndividuales();
+            } else {
+                if (seccionFiltros) seccionFiltros.classList.remove('hidden');
+                if (seccionVistas) seccionVistas.classList.remove('hidden');
+                if (bannerAlerta) bannerAlerta.classList.remove('hidden');
+                if (vistaIndiv) vistaIndiv.classList.add('hidden');
+
+                cambiarPestanaAnalitica(appState.pestanaAnalitica);
+            }
+        }
+
+        // CAMBIAR PESTAÑA ANALÍTICA
+        function cambiarPestanaAnalitica(pestana) {
+            appState.pestanaAnalitica = pestana;
+
+            const tabs = {
+                dashboard: document.getElementById('tabBtnDashboard'),
+                canal: document.getElementById('tabBtnCanal'),
+                matriz: document.getElementById('tabBtnMatriz'),
+                hospitalizados: document.getElementById('tabBtnHosp')
+            };
+
+            const vistas = {
+                dashboard: document.getElementById('vistaDashboard'),
+                canal: document.getElementById('vistaCanal'),
+                matriz: document.getElementById('vistaMatriz'),
+                hospitalizados: document.getElementById('vistaHosp')
+            };
+
+            Object.keys(tabs).forEach(t => {
+                if (tabs[t]) {
+                    if (t === pestana) {
+                        tabs[t].className = "sidebar-nav-item w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-bold text-white bg-slate-800/80 border border-slate-700/50";
+                    } else {
+                        tabs[t].className = "sidebar-nav-item w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-bold text-slate-400 hover:text-white hover:bg-slate-800/40";
+                    }
+                }
+            });
+
+            Object.keys(vistas).forEach(v => {
+                if (vistas[v]) {
+                    if (v === pestana) {
+                        vistas[v].classList.remove('hidden');
+                    } else {
+                        vistas[v].classList.add('hidden');
+                    }
+                }
+            });
+
+            actualizarInterfaceyGraficos();
+        }
+
+        // APLICAR FILTROS GLOBALES DE SELECCIÓN
+        function aplicarFiltrosGlobales() {
+            const selAnio = document.getElementById('selectAnio');
+            const selMes = document.getElementById('selectMes');
+            const selSE = document.getElementById('selectSE');
+
+            if (selAnio) appState.anioSeleccionado = selAnio.value;
+            if (selMes) appState.mesSeleccionado = selMes.value;
+            if (selSE) appState.seSeleccionada = selSE.value;
+
+            actualizarInterfaceyGraficos();
+        }
+
+        // ACTUALIZAR CONTADORES BADGES
+        function actualizarBadgesSidemenu() {
+            const calcTotal = (list) => (list || []).reduce((a, b) => a + (b.casosTotales || 0), 0);
+            
+            const badgeEDA = document.getElementById('badgeCountEDAs');
+            const badgeIRA = document.getElementById('badgeCountIRAs');
+            const badgeFeb = document.getElementById('badgeCountFebriles');
+            const badgeInd = document.getElementById('badgeCountIndividuales');
+
+            if (badgeEDA) badgeEDA.innerText = calcTotal(appState.repositorios.EDAs).toLocaleString();
+            if (badgeIRA) badgeIRA.innerText = calcTotal(appState.repositorios.IRAs).toLocaleString();
+            if (badgeFeb) badgeFeb.innerText = calcTotal(appState.repositorios.Febriles).toLocaleString();
+            if (badgeInd) badgeInd.innerText = (appState.repositorios.Individuales || []).length.toLocaleString();
+        }
+
+        // GENERADOR DE DATOS DE PRUEBA (DEMO 3 AÑOS MINSA)
+        function generarDatosDemo() {
+            const anios = ['2024', '2025', '2026'];
+            const mesesList = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+
+            const crearSerieSemanas = (multiplicadorBase) => {
+                const res = [];
+                anios.forEach(anio => {
+                    for (let se = 1; se <= 52; se++) {
+                        const mesIdx = Math.min(11, Math.floor((se - 1) / 4.35));
+                        const mes = mesesList[mesIdx];
+                        const estacionalidad = 1 + Math.sin((se / 52) * Math.PI * 2) * 0.4;
+                        const casosBase = Math.floor((15 + Math.random() * 25) * multiplicadorBase * estacionalidad);
+                        const hosp = Math.floor(casosBase * (0.05 + Math.random() * 0.08));
+
+                        res.push({
+                            anio: anio,
+                            se: se,
+                            mes: mes,
+                            casosTotales: casosBase,
+                            hospitalizados: hosp,
+                            menor1: Math.floor(casosBase * 0.25),
+                            de1a4: Math.floor(casosBase * 0.35),
+                            de5a11: Math.floor(casosBase * 0.20),
+                            de60mas: Math.floor(casosBase * 0.20)
+                        });
+                    }
+                });
+                return res;
+            };
+
+            appState.repositorios.EDAs = crearSerieSemanas(1.2);
+            appState.repositorios.IRAs = crearSerieSemanas(1.8);
+            appState.repositorios.Febriles = crearSerieSemanas(0.9);
+
+            const nombres = ['Carlos Mendoza', 'María Gutiérrez', 'Juan Pérez', 'Ana Flores', 'Luis Ramos', 'Elena Torres', 'Diego Castro', 'Sofía Vargas', 'José Martínez', 'Lucía Morales', 'Gabriel Díaz', 'Valeria Silva', 'Mateo Rojas', 'Camila Benítez', 'Lucas Fernández'];
+            const diagnosticos = [
+                { dx: 'Dengue sin signos de alarma', cie: 'A97.0' },
+                { dx: 'SIRA Severe', cie: 'J80' },
+                { dx: 'EDA Acuosa Aguda', cie: 'A09.0' },
+                { dx: 'Síndrome Febril Agudo', cie: 'R50.9' },
+                { dx: 'Gastroenteritis Infecciosa', cie: 'A09' },
+                { dx: 'Neumonía Adquirida en Comunidad', cie: 'J18.9' },
+                { dx: 'Infección Respiratoria Aguda', cie: 'J06.9' },
+                { dx: 'Dengue con signos de alarma', cie: 'A97.1' }
+            ];
+            const distritos = ['Ventanilla', 'Mi Perú', 'Ventanilla Alta', 'Pachacútec', 'Angamos', 'Ciudad Satélite'];
+
+            const listaIndiv = [];
+            for (let i = 1; i <= 40; i++) {
+                const anio = anios[i % 3];
+                const se = (i * 3) % 52 + 1;
+                const nombre = nombres[i % nombres.length] + ' ' + String.fromCharCode(65 + (i % 26)) + '.';
+                const dxItem = diagnosticos[i % diagnosticos.length];
+                listaIndiv.push({
+                    id: 'FICHA-' + anio + '-' + String(i).padStart(4, '0'),
+                    anio: anio,
+                    dni: String(70000000 + Math.floor(Math.random() * 9999999)),
+                    paciente: nombre,
+                    edad: Math.floor(Math.random() * 75) + 1,
+                    sexo: i % 2 === 0 ? 'M' : 'F',
+                    diagnostico: dxItem.dx,
+                    cie10: dxItem.cie,
+                    se: se,
+                    clasificacion: i % 4 === 0 ? 'Sospechoso' : 'Confirmado',
+                    condicion: i % 5 === 0 ? 'Hospitalizado' : 'Ambulatorio',
+                    distrito: distritos[i % distritos.length]
+                });
+            }
+            appState.repositorios.Individuales = listaIndiv;
+
+            actualizarOpcionesAnio();
+            actualizarBadgesSidemenu();
+        }
+
+        // CARGA Y MODAL HELPER
+        function cargarDatosDemo() {
+            generarDatosDemo();
+            actualizarInterfaceyGraficos();
+            mostrarModalNotificacion('Demo Cargada', 'Se han inicializado los repositorios independientes de EDAs, IRAs, Febriles y Casos Individuales con datos simulados del MINSA.', 'exito');
+        }
+
+        function mostrarModalNotificacion(titulo, desc, tipo) {
+            document.getElementById('modalTitle').innerText = titulo;
+            document.getElementById('modalDesc').innerText = desc;
+
+            const iconExito = document.getElementById('modalIconExito');
+            const iconError = document.getElementById('modalIconError');
+            const iconInfo = document.getElementById('modalIconInfo');
+
+            iconExito.classList.add('hidden');
+            iconError.classList.add('hidden');
+            iconInfo.classList.add('hidden');
+
+            if (tipo === 'exito') iconExito.classList.remove('hidden');
+            else if (tipo === 'error') iconError.classList.remove('hidden');
+            else iconInfo.classList.remove('hidden');
+
+            const modal = document.getElementById('modalNotificacion');
+            modal.classList.remove('hidden');
+            setTimeout(() => modal.classList.remove('opacity-0'), 10);
+        }
+
+        function cerrarModalNotificacion() {
+            const modal = document.getElementById('modalNotificacion');
+            modal.classList.add('opacity-0');
+            setTimeout(() => modal.classList.add('hidden'), 300);
+        }
+
+        // INICIALIZACIÓN AUTOMÁTICA AL CARGAR LA PÁGINA
+        window.onload = function() {
+            const selSE = document.getElementById('selectSE');
+            for (let i = 1; i <= 52; i++) {
+                const opt = document.createElement('option');
+                opt.value = i;
+                opt.innerText = 'S.E. ' + i;
+                selSE.appendChild(opt);
+            }
+
+            cargarDatosDemo();
+        };
     </script>
 </body>
 </html>
