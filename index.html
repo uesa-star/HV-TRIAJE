@@ -174,7 +174,7 @@
                 <div class="sidebar-label flex flex-col min-w-0">
                     <p class="text-xs font-bold text-slate-800 truncate">Dr. Guardia Triaje</p>
                     <p class="text-[10px] text-emerald-600 font-bold flex items-center gap-1">
-                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span> Nodo: 172.18.26.18
+                        <span id="nodeStatusDot" class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span> <span id="nodeStatusText">Nodo: verificando…</span>
                     </p>
                 </div>
             </div>
@@ -218,6 +218,11 @@
                         <p class="text-[9px] font-extrabold text-red-400 uppercase">Casos Críticos</p>
                         <p id="statCritical" class="text-xs font-extrabold text-red-700">2 hoy</p>
                     </div>
+                </div>
+
+                <div id="connBadge" class="hidden md:flex items-center gap-2 bg-amber-50 border border-amber-200 px-3 py-1.5 rounded-2xl" title="Estado del servidor">
+                    <span id="connDot" class="w-2 h-2 rounded-full bg-amber-500"></span>
+                    <span id="connText" class="text-[10px] font-extrabold text-amber-700 uppercase">Conectando…</span>
                 </div>
 
                 <div class="text-right pl-2 border-l border-slate-200">
@@ -983,6 +988,107 @@
 
         let RAW_DATA = loadData();
 
+        // --- [DATA] CAPA DE DATOS: API DEL HOSPITAL + RESGUARDO LOCAL ---
+        const API_CONFIG = {
+            baseUrl: 'http://172.18.26.18:8000',
+            timeoutMs: 3000,
+            pollMs: 10000
+        };
+
+        let apiOnline = false;
+        let apiChecked = false;
+
+        function apiEndpoint(path, id) {
+            return API_CONFIG.baseUrl + '/' + path.replace('{id}', encodeURIComponent(id ?? ''));
+        }
+
+        async function apiFetch(path, method, body, id) {
+            const ctrl = new AbortController();
+            const timer = setTimeout(() => ctrl.abort(), API_CONFIG.timeoutMs);
+            try {
+                const res = await fetch(apiEndpoint(path, id), {
+                    method,
+                    headers: body ? { 'Content-Type': 'application/json' } : undefined,
+                    body: body ? JSON.stringify(body) : undefined,
+                    signal: ctrl.signal
+                });
+                return res.ok ? await res.json().catch(() => null) : null;
+            } catch (err) {
+                return null;
+            } finally {
+                clearTimeout(timer);
+            }
+        }
+
+        async function checkApi() {
+            apiOnline = !!(await apiFetch('api/triajes'));
+            apiChecked = true;
+            updateConnectionBanner();
+            return apiOnline;
+        }
+
+        async function pushRecord(rec, isNew) {
+            if (!apiOnline) return null;
+            apiOnline = !!(await (isNew
+                ? apiFetch('api/triajes', 'POST', rec)
+                : apiFetch('api/triajes/{id}', 'PUT', rec, rec.id)));
+            updateConnectionBanner();
+        }
+
+        async function pullFromServer() {
+            if (!apiOnline) return;
+            const rows = await apiFetch('api/triajes');
+            if (!Array.isArray(rows)) return;
+            const serverIds = new Set(rows.map((s) => String(s.id)));
+            RAW_DATA = RAW_DATA.map((local) => {
+                const match = rows.find((s) => String(s.id) === String(local.id));
+                return match ? normalizeRecord(match) : local;
+            });
+            rows.forEach((s) => {
+                const rec = normalizeRecord(s);
+                if (!serverIds.has(String(rec.id))) { RAW_DATA.push(rec); serverIds.add(String(rec.id)); }
+            });
+            const pending = RAW_DATA.filter((r) => !serverIds.has(String(r.id)) && r.id);
+            pending.forEach((r) => pushRecord(r, true));
+            RAW_DATA.sort((a, b) => (b.fecha + b.hora).localeCompare(a.fecha + a.hora));
+            persistData();
+            refreshAll();
+        }
+
+        function refreshAll() {
+            executeFilter();
+            renderQueue();
+            refreshCurrentView();
+        }
+
+        function updateConnectionBanner() {
+            const badge = document.getElementById('connBadge');
+            const dot = document.getElementById('connDot');
+            const text = document.getElementById('connText');
+            const nodeText = document.getElementById('nodeStatusText');
+            const nodeDot = document.getElementById('nodeStatusDot');
+            const online = apiChecked && apiOnline;
+            if (badge) {
+                badge.classList.remove('bg-emerald-50', 'border-emerald-200', 'bg-amber-50', 'border-amber-200');
+                badge.classList.add(online ? 'bg-emerald-50' : 'bg-amber-50', online ? 'border-emerald-200' : 'border-amber-200');
+            }
+            if (dot) dot.className = 'w-2 h-2 rounded-full ' + (online ? 'bg-emerald-500' : 'bg-amber-500');
+            if (text) {
+                text.innerText = online ? 'Conectado al Nodo' : (apiChecked ? 'Sin conexión · Modo Local' : 'Conectando…');
+                text.className = 'text-[10px] font-extrabold uppercase ' + (online ? 'text-emerald-700' : 'text-amber-700');
+            }
+            if (nodeText) nodeText.innerText = online ? 'Nodo: ' + API_CONFIG.baseUrl : (apiChecked ? 'Modo Local' : 'Verificando…');
+            if (nodeDot) nodeDot.className = 'w-1.5 h-1.5 rounded-full animate-pulse ' + (online ? 'bg-emerald-500' : 'bg-amber-500');
+        }
+
+        async function bootstrapApi() {
+            if (await checkApi()) { await pullFromServer(); }
+            setInterval(async () => {
+                const ok = await checkApi();
+                if (ok) { await pullFromServer(); }
+            }, API_CONFIG.pollMs);
+        }
+
         let filteredData = [...RAW_DATA];
         let currentSelectedPatient = null;
         let flowChartInstance = null;
@@ -1446,6 +1552,7 @@
 
             RAW_DATA.unshift(newRecord);
             persistData();
+            pushRecord(newRecord, true);
             executeFilter();
             renderQueue();
             closeNewTriageModal();
@@ -1674,6 +1781,7 @@
             if (dateHeader) {
                 dateHeader.innerText = formatDate(new Date().toISOString().split('T')[0]);
             }
+            bootstrapApi();
         };
 
         let isCollapsed = false;
@@ -1686,6 +1794,7 @@
             p.medico = p.medico || 'Dr. Guardia Triaje';
             p.horaInicio = nowTime();
             persistData();
+            pushRecord(p, false);
             executeFilter();
             renderQueue();
             updateStats();
@@ -1722,6 +1831,7 @@
             p.vacuna = document.getElementById('completeVacuna').value;
             p.horaFin = nowTime();
             persistData();
+            pushRecord(p, false);
             executeFilter();
             renderQueue();
             closeCompleteAttentionModal();
@@ -1736,6 +1846,7 @@
             p.horaInicio = nowTime();
             p.horaFin = null;
             persistData();
+            pushRecord(p, false);
             executeFilter();
             renderQueue();
             updateStats();
