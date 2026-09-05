@@ -136,6 +136,11 @@
                 <span class="nav-label whitespace-nowrap">Reporte de Triaje</span>
             </button>
 
+            <button onclick="switchView('ingreso')" id="nav-ingreso" title="Ingreso de Pacientes" class="nav-item w-full flex items-center px-3.5 py-3 rounded-2xl transition-all text-slate-600 hover:bg-slate-50 font-semibold text-xs gap-3">
+                <span class="text-lg shrink-0">📝</span>
+                <span class="nav-label whitespace-nowrap">Ingreso de Pacientes</span>
+            </button>
+
             <button onclick="switchView('cola')" id="nav-cola" title="Cola de Espera en Tiempo Real" class="nav-item w-full flex items-center px-3.5 py-3 rounded-2xl transition-all text-slate-600 hover:bg-slate-50 font-semibold text-xs gap-3">
                 <span class="text-lg shrink-0">⏳</span>
                 <span class="nav-label whitespace-nowrap">Cola de Espera</span>
@@ -410,7 +415,145 @@
                 </div>
             </section>
 
-            <!-- ================= VISTA 3: COLA DE ESPERA EN TIEMPO REAL ================= -->
+            <!-- ================= VISTA 3: INGRESO DE PACIENTES ================= -->
+            <section id="view-ingreso" class="view-section max-w-4xl mx-auto space-y-4">
+                <div class="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
+                    <div class="bg-brand-800 text-white px-6 py-4 flex items-center gap-3">
+                        <span class="text-2xl">🩺</span>
+                        <div>
+                            <h3 class="font-extrabold text-sm sm:text-base">Ingreso de Pacientes - Formulario de Triaje</h3>
+                            <p class="text-[11px] text-brand-200">Captura de Signos Vitales y Funciones Vitales Adicionales</p>
+                        </div>
+                    </div>
+
+                    <form id="ingresoForm" onsubmit="saveIngresoTriage(event)" class="p-4 sm:p-6 space-y-4">
+                        <div>
+                            <h4 class="text-xs font-extrabold text-brand-800 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                                <span>👤</span> 1. Filiación e Identificación del Paciente
+                            </h4>
+                            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                <div class="sm:col-span-2">
+                                    <label class="text-[10px] font-bold text-slate-500 uppercase block mb-1">Apellidos y Nombres *</label>
+                                    <input type="text" id="ingPaciente" required placeholder="Ej: PEREZ GARCIA, JUAN" class="filter-input w-full px-3 py-2 text-xs rounded-xl uppercase font-semibold">
+                                </div>
+                                <div>
+                                    <label class="text-[10px] font-bold text-slate-500 uppercase block mb-1">DNI / Doc *</label>
+                                    <input type="text" id="ingDni" maxlength="8" required placeholder="8 dígitos" class="filter-input w-full px-3 py-2 text-xs rounded-xl font-mono">
+                                </div>
+                            </div>
+                            <div class="grid grid-cols-3 gap-3 mt-2.5">
+                                <div>
+                                    <label class="text-[10px] font-bold text-slate-500 uppercase block mb-1">HC (Historia Clínica)</label>
+                                    <input type="text" id="ingHc" placeholder="Ej: HC-009855" class="filter-input w-full px-3 py-2 text-xs rounded-xl font-mono">
+                                </div>
+                                <div>
+                                    <label class="text-[10px] font-bold text-slate-500 uppercase block mb-1">Edad *</label>
+                                    <input type="text" id="ingEdad" required placeholder="Ej: 42a" class="filter-input w-full px-3 py-2 text-xs rounded-xl">
+                                </div>
+                                <div>
+                                    <label class="text-[10px] font-bold text-slate-500 uppercase block mb-1">Sexo *</label>
+                                    <select id="ingSexo" class="filter-input w-full px-3 py-2 text-xs rounded-xl font-semibold">
+                                        <option value="M">Masculino (M)</option>
+                                        <option value="F">Femenino (F)</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="mt-2.5">
+                                <label class="text-[10px] font-bold text-slate-500 uppercase block mb-1">Especialidad (opcional)</label>
+                                <select id="ingEspecialidad" class="filter-input w-full px-3 py-2 text-xs rounded-xl font-semibold">
+                                    <option value="">Sin definir</option>
+                                    <option>Medicina General</option>
+                                    <option>Cirugía General</option>
+                                    <option>Pediatría</option>
+                                    <option>Ginecología</option>
+                                    <option>Traumatología</option>
+                                    <option>Cardiología</option>
+                                    <option>Neurología</option>
+                                    <option>Otorrinolaringología</option>
+                                    <option>Oftalmología</option>
+                                    <option>Odontología</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div>
+                            <h4 class="text-xs font-extrabold text-brand-800 uppercase tracking-wider mb-2.5 flex items-center gap-1.5">
+                                <span>📊</span> 2. Datos de Triaje (Basado en Estándar Clínico)
+                            </h4>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div class="bg-sky-50/90 border border-sky-200 p-3.5 rounded-2xl">
+                                    <div class="bg-sky-700 text-white text-xs font-extrabold px-3 py-1.5 rounded-xl mb-3 flex items-center justify-between">
+                                        <span>Signos Vitales</span>
+                                        <span class="text-[9px] font-normal opacity-90">Rangos Normales</span>
+                                    </div>
+                                    <div class="space-y-2.5 text-xs">
+                                        <div>
+                                            <div class="flex justify-between text-[10px] font-bold text-slate-600 mb-1">
+                                                <span>📈 PA (Presión Arterial)</span>
+                                                <span class="text-sky-700 font-mono text-[9px]">Sist: 90-120 / Diast: 60-80</span>
+                                            </div>
+                                            <div class="grid grid-cols-2 gap-2">
+                                                <input type="number" id="ingPaSist" required placeholder="Sist (90-120)" class="filter-input w-full px-2.5 py-1.5 bg-white rounded-xl font-mono text-xs font-bold text-slate-800">
+                                                <input type="number" id="ingPaDiast" required placeholder="Diast (60-80)" class="filter-input w-full px-2.5 py-1.5 bg-white rounded-xl font-mono text-xs font-bold text-slate-800">
+                                            </div>
+                                        </div>
+                                        <div class="grid grid-cols-3 items-center gap-2">
+                                            <span class="font-bold text-slate-700 text-[10px] flex items-center gap-1">❤️ FC (bpm):</span>
+                                            <input type="number" id="ingFc" required placeholder="50 - 100" class="col-span-2 filter-input w-full px-2.5 py-1.5 bg-white rounded-xl font-mono text-xs font-bold text-slate-800">
+                                        </div>
+                                        <div class="grid grid-cols-3 items-center gap-2">
+                                            <span class="font-bold text-slate-700 text-[10px] flex items-center gap-1">🫁 FR (rpm):</span>
+                                            <input type="number" id="ingFr" required placeholder="12 - 20" class="col-span-2 filter-input w-full px-2.5 py-1.5 bg-white rounded-xl font-mono text-xs font-bold text-slate-800">
+                                        </div>
+                                        <div class="grid grid-cols-3 items-center gap-2">
+                                            <span class="font-bold text-slate-700 text-[10px] flex items-center gap-1">🫁 SAT (%):</span>
+                                            <input type="number" id="ingSat" required placeholder="95 - 100%" class="col-span-2 filter-input w-full px-2.5 py-1.5 bg-white rounded-xl font-mono text-xs font-bold text-slate-800">
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="bg-blue-50/90 border border-blue-200 p-3.5 rounded-2xl">
+                                    <div class="bg-brand-700 text-white text-xs font-extrabold px-3 py-1.5 rounded-xl mb-3 flex items-center justify-between">
+                                        <span>Adicionales & Antropometría</span>
+                                        <span class="text-[9px] font-normal opacity-90">Valores Clínicos</span>
+                                    </div>
+                                    <div class="space-y-2.5 text-xs">
+                                        <div class="grid grid-cols-3 items-center gap-2">
+                                            <span class="font-bold text-slate-700 text-[10px] flex items-center gap-1">🌡️ T° (°C):</span>
+                                            <input type="number" step="0.1" id="ingT" required placeholder="36 - 37 °C" class="col-span-2 filter-input w-full px-2.5 py-1.5 bg-white rounded-xl font-mono text-xs font-bold text-slate-800">
+                                        </div>
+                                        <div class="grid grid-cols-3 items-center gap-2">
+                                            <span class="font-bold text-slate-700 text-[10px] flex items-center gap-1">📏 Talla (cm):</span>
+                                            <input type="number" id="ingTalla" placeholder="cm (e.g. 165)" class="col-span-2 filter-input w-full px-2.5 py-1.5 bg-white rounded-xl font-mono text-xs font-bold text-slate-800">
+                                        </div>
+                                        <div class="grid grid-cols-3 items-center gap-2">
+                                            <span class="font-bold text-slate-700 text-[10px] flex items-center gap-1">⚖️ Peso (Kg):</span>
+                                            <input type="number" step="0.1" id="ingPeso" placeholder="Kg (e.g. 70)" class="col-span-2 filter-input w-full px-2.5 py-1.5 bg-white rounded-xl font-mono text-xs font-bold text-slate-800">
+                                        </div>
+                                        <div class="grid grid-cols-3 items-center gap-2">
+                                            <span class="font-bold text-slate-700 text-[10px] flex items-center gap-1">🩸 Glucosa:</span>
+                                            <input type="number" id="ingGlucosa" placeholder="mg/dL (70-140)" class="col-span-2 filter-input w-full px-2.5 py-1.5 bg-white rounded-xl font-mono text-xs font-bold text-slate-800">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="text-[10px] font-bold text-slate-500 uppercase block mb-1">Motivo Principal de Consulta / Síntomas Agudos *</label>
+                            <textarea id="ingMotivo" rows="2" required placeholder="Describa malestar principal, dolor, evolución de síntomas..." class="filter-input w-full p-2.5 text-xs rounded-xl"></textarea>
+                        </div>
+
+                        <div class="flex items-center justify-end gap-3 pt-3 border-t border-slate-100">
+                            <button type="submit" class="px-5 py-2 rounded-xl text-xs font-extrabold text-white bg-brand-700 hover:bg-brand-800 shadow-md transition-all uppercase tracking-wider">
+                                Guardar & Categorizar Paciente
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </section>
+
+            <!-- ================= VISTA 4: COLA DE ESPERA EN TIEMPO REAL ================= -->
             <section id="view-cola" class="view-section max-w-7xl mx-auto space-y-6">
                 <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
                     <div class="bg-white p-5 rounded-3xl border border-slate-200 shadow-sm">
@@ -452,7 +595,7 @@
                 </div>
             </section>
 
-            <!-- ================= VISTA 4: ANALÍTICA OPERATIVA ================= -->
+            <!-- ================= VISTA 5: ANALÍTICA OPERATIVA ================= -->
             <section id="view-estadisticas" class="view-section max-w-7xl mx-auto space-y-6">
                 <!-- KPIs Analíticos -->
                 <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -1495,51 +1638,51 @@
             if (form) form.reset();
         }
 
-        function saveNewTriage(e) {
-            e.preventDefault();
-            
-            const paciente = document.getElementById('formPaciente').value;
-            const dni = document.getElementById('formDni').value;
-            const hc = document.getElementById('formHc').value || `HC-00${Math.floor(1000 + Math.random() * 9000)}`;
-            const edad = document.getElementById('formEdad').value;
-            const sexo = document.getElementById('formSexo').value;
-            const especialidad = document.getElementById('formEspecialidad').value;
-            
-            const paSist = parseInt(document.getElementById('formPaSist').value);
-            const paDiast = parseInt(document.getElementById('formPaDiast').value);
-            const fc = parseInt(document.getElementById('formFc').value);
-            const fr = parseInt(document.getElementById('formFr').value);
-            const sat = parseInt(document.getElementById('formSat').value);
-            
-            const t = parseFloat(document.getElementById('formT').value);
-            const talla = parseInt(document.getElementById('formTalla').value) || 0;
-            const peso = parseFloat(document.getElementById('formPeso').value) || 0;
-            const glucosa = parseInt(document.getElementById('formGlucosa').value) || 0;
-            const motivo = document.getElementById('formMotivo').value || 'Atención en Urgencias';
+        function readTriageInputs(prefix) {
+            return {
+                paciente: document.getElementById(prefix + 'Paciente').value,
+                dni: document.getElementById(prefix + 'Dni').value,
+                hc: document.getElementById(prefix + 'Hc').value || `HC-00${Math.floor(1000 + Math.random() * 9000)}`,
+                edad: document.getElementById(prefix + 'Edad').value,
+                sexo: document.getElementById(prefix + 'Sexo').value,
+                especialidad: document.getElementById(prefix + 'Especialidad').value,
+                paSist: parseInt(document.getElementById(prefix + 'PaSist').value),
+                paDiast: parseInt(document.getElementById(prefix + 'PaDiast').value),
+                fc: parseInt(document.getElementById(prefix + 'Fc').value),
+                fr: parseInt(document.getElementById(prefix + 'Fr').value),
+                sat: parseInt(document.getElementById(prefix + 'Sat').value),
+                t: parseFloat(document.getElementById(prefix + 'T').value),
+                talla: parseInt(document.getElementById(prefix + 'Talla').value) || 0,
+                peso: parseFloat(document.getElementById(prefix + 'Peso').value) || 0,
+                glucosa: parseInt(document.getElementById(prefix + 'Glucosa').value) || 0,
+                motivo: document.getElementById(prefix + 'Motivo').value || 'Atención en Urgencias'
+            };
+        }
 
-            const autoRiesgo = calculateTriagePriority(paSist, paDiast, fc, fr, sat, t, glucosa);
-            
+        function createTriageRecord(v) {
+            const autoRiesgo = calculateTriagePriority(v.paSist, v.paDiast, v.fc, v.fr, v.sat, v.t, v.glucosa);
+
             const newRecord = {
                 id: Date.now(),
-                hc,
+                hc: v.hc,
                 fecha: new Date().toISOString().split('T')[0],
                 hora: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-                paciente,
-                dni,
-                edad,
-                sexo,
-                especialidad,
-                paSist,
-                paDiast,
-                fc,
-                fr,
-                sat,
-                t,
-                talla,
-                peso,
-                glucosa,
+                paciente: v.paciente,
+                dni: v.dni,
+                edad: v.edad,
+                sexo: v.sexo,
+                especialidad: v.especialidad,
+                paSist: v.paSist,
+                paDiast: v.paDiast,
+                fc: v.fc,
+                fr: v.fr,
+                sat: v.sat,
+                t: v.t,
+                talla: v.talla,
+                peso: v.peso,
+                glucosa: v.glucosa,
                 riesgo: autoRiesgo,
-                motivo,
+                motivo: v.motivo,
                 estado: 'en_espera',
                 areaDestino: '',
                 diagnostico: '',
@@ -1555,8 +1698,26 @@
             pushRecord(newRecord, true);
             executeFilter();
             renderQueue();
+            return newRecord;
+        }
+
+        function triageToast(rec) {
+            triggerToast(`Paciente ${rec.paciente} clasificado: ${rec.riesgo.toUpperCase()}`, rec.riesgo === 'critico' ? 'danger' : 'success');
+        }
+
+        function saveNewTriage(e) {
+            e.preventDefault();
+            const rec = createTriageRecord(readTriageInputs('form'));
             closeNewTriageModal();
-            triggerToast(`Paciente ${paciente} clasificado: ${autoRiesgo.toUpperCase()}`, autoRiesgo === 'critico' ? 'danger' : 'success');
+            triageToast(rec);
+        }
+
+        function saveIngresoTriage(e) {
+            e.preventDefault();
+            const rec = createTriageRecord(readTriageInputs('ing'));
+            const form = document.getElementById('ingresoForm');
+            if (form) form.reset();
+            triageToast(rec);
         }
 
         function openPatientDrawer(id) {
@@ -1654,6 +1815,7 @@
 
             const titles = {
                 'dashboard': 'Dashboard Real-Time de Triaje',
+                'ingreso': 'Ingreso de Pacientes',
                 'cola': 'Cola de Espera en Tiempo Real',
                 'reporte': 'Reporte de Triaje General',
                 'estadisticas': 'Analítica Operativa de Guardia'
