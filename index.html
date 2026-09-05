@@ -116,7 +116,8 @@
     <aside id="sidebar" class="w-full md:w-64 bg-white border-b md:border-b-0 md:border-r border-slate-200 flex flex-col shrink-0 transition-all duration-300 z-30">
         
         <!-- Header del Sidebar / Marca -->
-        <div class="h-16 md:h-20 flex items-center justify-end px-4 md:px-5 border-b border-slate-100 shrink-0">
+        <div class="h-16 md:h-20 flex items-center justify-between px-4 md:px-5 border-b border-slate-100 shrink-0">
+            <span class="sidebar-label text-[10px] font-black text-slate-400 uppercase tracking-widest">Menú:</span>
             <button id="toggleBtn" onclick="toggleSidebar()" title="Colapsar / Expandir Menú" class="p-2 hover:bg-slate-100 rounded-xl text-slate-500 text-lg transition-colors">
                 ☰
             </button>
@@ -126,9 +127,9 @@
         <nav id="sidebarNav" class="flex-1 p-3 space-y-1.5 overflow-y-auto custom-scrollbar">
             <p class="sidebar-label text-[10px] font-black text-slate-400 uppercase tracking-widest px-3 py-2">Módulos de Atención</p>
             
-            <button onclick="switchView('dashboard')" id="nav-dashboard" title="Dashboard Real-Time" class="nav-item w-full flex items-center px-3.5 py-3 rounded-2xl transition-all text-slate-600 hover:bg-slate-50 font-semibold text-xs gap-3">
-                <span class="text-lg shrink-0">📊</span>
-                <span class="nav-label whitespace-nowrap">Dashboard Real-Time</span>
+            <button onclick="switchView('ingreso')" id="nav-ingreso" title="Ingreso de Pacientes" class="nav-item w-full flex items-center px-3.5 py-3 rounded-2xl transition-all text-slate-600 hover:bg-slate-50 font-semibold text-xs gap-3">
+                <span class="text-lg shrink-0">📝</span>
+                <span class="nav-label whitespace-nowrap">Ingreso de Pacientes</span>
             </button>
 
             <button onclick="switchView('reporte')" id="nav-reporte" title="Reporte de Triaje" class="nav-item w-full active-nav flex items-center px-3.5 py-3 rounded-2xl transition-all text-xs gap-3">
@@ -136,28 +137,19 @@
                 <span class="nav-label whitespace-nowrap">Reporte de Triaje</span>
             </button>
 
-            <button onclick="switchView('ingreso')" id="nav-ingreso" title="Ingreso de Pacientes" class="nav-item w-full flex items-center px-3.5 py-3 rounded-2xl transition-all text-slate-600 hover:bg-slate-50 font-semibold text-xs gap-3">
-                <span class="text-lg shrink-0">📝</span>
-                <span class="nav-label whitespace-nowrap">Ingreso de Pacientes</span>
-            </button>
-
             <button onclick="switchView('cola')" id="nav-cola" title="Cola de Espera en Tiempo Real" class="nav-item w-full flex items-center px-3.5 py-3 rounded-2xl transition-all text-slate-600 hover:bg-slate-50 font-semibold text-xs gap-3">
                 <span class="text-lg shrink-0">⏳</span>
                 <span class="nav-label whitespace-nowrap">Cola de Espera</span>
             </button>
 
+            <button onclick="switchView('dashboard')" id="nav-dashboard" title="Dashboard Real-Time" class="nav-item w-full flex items-center px-3.5 py-3 rounded-2xl transition-all text-slate-600 hover:bg-slate-50 font-semibold text-xs gap-3">
+                <span class="text-lg shrink-0">📊</span>
+                <span class="nav-label whitespace-nowrap">Dashboard Real-Time</span>
+            </button>
+
             <button onclick="switchView('estadisticas')" id="nav-estadisticas" title="Analítica Operativa" class="nav-item w-full flex items-center px-3.5 py-3 rounded-2xl transition-all text-slate-600 hover:bg-slate-50 font-semibold text-xs gap-3">
                 <span class="text-lg shrink-0">📈</span>
                 <span class="nav-label whitespace-nowrap">Analítica Operativa</span>
-            </button>
-
-            <div class="py-2">
-                <div class="h-px bg-slate-100 w-full"></div>
-            </div>
-
-            <button onclick="openNewTriageModal()" title="Admitir Triaje" class="nav-item w-full bg-brand-700 hover:bg-brand-800 text-white font-extrabold p-3 rounded-2xl shadow-md shadow-brand-700/20 transition-all flex items-center justify-center gap-2 text-xs uppercase tracking-wider">
-                <span class="shrink-0">➕</span>
-                <span class="nav-label whitespace-nowrap">Admitir Triaje</span>
             </button>
         </nav>
 
