@@ -145,6 +145,11 @@
                 <span class="nav-label whitespace-nowrap">Reporte de Triaje</span>
             </button>
 
+            <button onclick="switchView('cola')" id="nav-cola" title="Cola de Espera en Tiempo Real" class="nav-item w-full flex items-center px-3.5 py-3 rounded-2xl transition-all text-slate-600 hover:bg-slate-50 font-semibold text-xs gap-3">
+                <span class="text-lg shrink-0">⏳</span>
+                <span class="nav-label whitespace-nowrap">Cola de Espera</span>
+            </button>
+
             <button onclick="switchView('estadisticas')" id="nav-estadisticas" title="Analítica Operativa" class="nav-item w-full flex items-center px-3.5 py-3 rounded-2xl transition-all text-slate-600 hover:bg-slate-50 font-semibold text-xs gap-3">
                 <span class="text-lg shrink-0">📈</span>
                 <span class="nav-label whitespace-nowrap">Analítica Operativa</span>
@@ -203,7 +208,7 @@
                     <span class="text-xl">⏱️</span>
                     <div>
                         <p class="text-[9px] font-extrabold text-slate-400 uppercase">Espera Promedio</p>
-                        <p class="text-xs font-extrabold text-slate-800">14 min</p>
+                        <p id="statWait" class="text-xs font-extrabold text-slate-800">-- min</p>
                     </div>
                 </div>
 
@@ -241,7 +246,7 @@
                     <div class="bg-white p-5 rounded-3xl border border-slate-200 shadow-sm flex items-center justify-between">
                         <div>
                             <p class="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Prioridad I (Críticos)</p>
-                            <h3 class="text-2xl font-black text-red-600 mt-1">2</h3>
+                            <h3 id="statP1" class="text-2xl font-black text-red-600 mt-1">0</h3>
                             <span class="text-[10px] text-red-600 font-extrabold bg-red-50 px-2 py-0.5 rounded-md mt-2 inline-block">Atención Inmediata</span>
                         </div>
                         <div class="w-12 h-12 rounded-2xl bg-red-50 text-red-600 flex items-center justify-center text-2xl font-bold">🚑</div>
@@ -250,7 +255,7 @@
                     <div class="bg-white p-5 rounded-3xl border border-slate-200 shadow-sm flex items-center justify-between">
                         <div>
                             <p class="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Prioridad II (Urgente)</p>
-                            <h3 class="text-2xl font-black text-orange-500 mt-1">4</h3>
+                            <h3 id="statP2" class="text-2xl font-black text-orange-500 mt-1">0</h3>
                             <span class="text-[10px] text-orange-600 font-extrabold bg-orange-50 px-2 py-0.5 rounded-md mt-2 inline-block">Espera &lt; 15 min</span>
                         </div>
                         <div class="w-12 h-12 rounded-2xl bg-orange-50 text-orange-600 flex items-center justify-center text-2xl font-bold">⚡</div>
@@ -400,26 +405,103 @@
                 </div>
             </section>
 
-            <!-- ================= VISTA 3: ESTADÍSTICAS ================= -->
-            <section id="view-estadisticas" class="view-section max-w-7xl mx-auto">
-                <div class="bg-white rounded-3xl border border-slate-200 p-6 shadow-sm">
-                    <h3 class="font-extrabold text-slate-800 text-sm mb-4">Resumen Estadístico de Guardia</h3>
-                    <p class="text-xs text-slate-500 mb-6">Métricas de tiempo de respuesta, volumen por especialidad y demanda del servicio de emergencias.</p>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div class="p-4 bg-slate-50 rounded-2xl border border-slate-100">
-                            <p class="text-xs font-bold text-slate-700 mb-2">Porcentaje de Pacientes Atendidos &lt; 15min</p>
-                            <div class="w-full bg-slate-200 rounded-full h-3 overflow-hidden">
-                                <div class="bg-emerald-500 h-3 rounded-full" style="width: 88%"></div>
-                            </div>
-                            <span class="text-[10px] font-extrabold text-emerald-600 mt-1 inline-block">88% Eficiencia de Triaje</span>
+            <!-- ================= VISTA 3: COLA DE ESPERA EN TIEMPO REAL ================= -->
+            <section id="view-cola" class="view-section max-w-7xl mx-auto space-y-6">
+                <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div class="bg-white p-5 rounded-3xl border border-slate-200 shadow-sm">
+                        <p class="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">En Espera</p>
+                        <h3 id="queueWaiting" class="text-2xl font-black text-amber-500 mt-1">0</h3>
+                    </div>
+                    <div class="bg-white p-5 rounded-3xl border border-slate-200 shadow-sm">
+                        <p class="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">En Atención</p>
+                        <h3 id="queueActive" class="text-2xl font-black text-blue-600 mt-1">0</h3>
+                    </div>
+                    <div class="bg-white p-5 rounded-3xl border border-slate-200 shadow-sm">
+                        <p class="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Atendidos</p>
+                        <h3 id="queueDone" class="text-2xl font-black text-emerald-600 mt-1">0</h3>
+                    </div>
+                    <div class="bg-white p-5 rounded-3xl border border-slate-200 shadow-sm">
+                        <p class="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Espera Máxima</p>
+                        <h3 id="queueMax" class="text-2xl font-black text-red-600 mt-1">0</h3>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
+                    <div class="bg-white rounded-3xl border border-slate-200 shadow-sm p-5">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="font-extrabold text-slate-800 text-sm flex items-center gap-2">⏳ Cola de Espera en Tiempo Real</h3>
+                            <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
                         </div>
-                        <div class="p-4 bg-slate-50 rounded-2xl border border-slate-100">
-                            <p class="text-xs font-bold text-slate-700 mb-2">Capacidad Operativa del Servicio</p>
-                            <div class="w-full bg-slate-200 rounded-full h-3 overflow-hidden">
-                                <div class="bg-brand-600 h-3 rounded-full" style="width: 65%"></div>
-                            </div>
-                            <span class="text-[10px] font-extrabold text-brand-700 mt-1 inline-block">65% Ocupación Médica</span>
+                        <div id="queueWaitingList" class="space-y-2.5 max-h-[440px] overflow-y-auto custom-scrollbar pr-1"></div>
+                    </div>
+                    <div class="space-y-6">
+                        <div class="bg-white rounded-3xl border border-slate-200 shadow-sm p-5">
+                            <h3 class="font-extrabold text-slate-800 text-sm mb-4 flex items-center gap-2">🔵 En Atención</h3>
+                            <div id="queueActiveList" class="space-y-2.5 max-h-[200px] overflow-y-auto custom-scrollbar pr-1"></div>
                         </div>
+                        <div class="bg-white rounded-3xl border border-slate-200 shadow-sm p-5">
+                            <h3 class="font-extrabold text-slate-800 text-sm mb-4 flex items-center gap-2">🟢 Atendidos Hoy</h3>
+                            <div id="queueDoneList" class="space-y-2.5 max-h-[200px] overflow-y-auto custom-scrollbar pr-1"></div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ================= VISTA 4: ANALÍTICA OPERATIVA ================= -->
+            <section id="view-estadisticas" class="view-section max-w-7xl mx-auto space-y-6">
+                <!-- KPIs Analíticos -->
+                <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div class="bg-white p-5 rounded-3xl border border-slate-200 shadow-sm">
+                        <p class="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Pacientes Hoy</p>
+                        <h3 id="statHoy" class="text-2xl font-black text-slate-800 mt-1">0</h3>
+                    </div>
+                    <div class="bg-white p-5 rounded-3xl border border-slate-200 shadow-sm">
+                        <p class="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">En Espera</p>
+                        <h3 id="statEsperaAna" class="text-2xl font-black text-amber-500 mt-1">0</h3>
+                    </div>
+                    <div class="bg-white p-5 rounded-3xl border border-slate-200 shadow-sm">
+                        <p class="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Atendidos</p>
+                        <h3 id="statAtendiAna" class="text-2xl font-black text-emerald-600 mt-1">0</h3>
+                    </div>
+                    <div class="bg-white p-5 rounded-3xl border border-slate-200 shadow-sm">
+                        <p class="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Espera Promedio</p>
+                        <h3 id="statEsperaPromAna" class="text-2xl font-black text-brand-700 mt-1">0 min</h3>
+                    </div>
+                </div>
+
+                <!-- Gráficos de Analítica -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div class="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="font-extrabold text-slate-800 text-sm flex items-center gap-2">📈 Pacientes por Hora de Ingreso</h3>
+                            <span class="text-xs text-slate-400 font-bold">Distribución real</span>
+                        </div>
+                        <div class="relative w-full h-64"><canvas id="analyticsHourChart"></canvas></div>
+                    </div>
+                    <div class="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="font-extrabold text-slate-800 text-sm">🎯 Distribución por Prioridad ESI</h3>
+                        </div>
+                        <div class="relative w-full h-64"><canvas id="analyticsPriorityChart"></canvas></div>
+                    </div>
+                    <div class="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="font-extrabold text-slate-800 text-sm">🏥 Volumen por Especialidad</h3>
+                        </div>
+                        <div class="relative w-full h-64"><canvas id="analyticsSpecialtyChart"></canvas></div>
+                    </div>
+                    <div class="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="font-extrabold text-slate-800 text-sm">🚪 Destino de Pacientes</h3>
+                        </div>
+                        <div class="relative w-full h-64"><canvas id="analyticsAreaChart"></canvas></div>
+                    </div>
+                    <div class="lg:col-span-2 bg-white p-6 rounded-3xl border border-slate-200 shadow-sm">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="font-extrabold text-slate-800 text-sm flex items-center gap-2">📅 Tendencia de Ingresos por Día</h3>
+                            <span class="text-xs text-slate-400 font-bold">Serie temporal</span>
+                        </div>
+                        <div class="relative w-full h-64"><canvas id="analyticsDayChart"></canvas></div>
                     </div>
                 </div>
             </section>
@@ -475,6 +557,22 @@
                                 <option value="F">Femenino (F)</option>
                             </select>
                         </div>
+                    </div>
+                    <div class="mt-2.5">
+                        <label class="text-[10px] font-bold text-slate-500 uppercase block mb-1">Especialidad (opcional)</label>
+                        <select id="formEspecialidad" class="filter-input w-full px-3 py-2 text-xs rounded-xl font-semibold">
+                            <option value="">Sin definir</option>
+                            <option>Medicina General</option>
+                            <option>Cirugía General</option>
+                            <option>Pediatría</option>
+                            <option>Ginecología</option>
+                            <option>Traumatología</option>
+                            <option>Cardiología</option>
+                            <option>Neurología</option>
+                            <option>Otorrinolaringología</option>
+                            <option>Oftalmología</option>
+                            <option>Odontología</option>
+                        </select>
                     </div>
                 </div>
 
@@ -580,6 +678,66 @@
         </div>
     </div>
 
+    <!-- ================= MODAL: CERRAR ATENCIÓN ================= -->
+    <div id="completeModal" class="fixed inset-0 z-50 hidden bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4">
+        <div class="bg-white rounded-3xl max-w-lg w-full shadow-2xl overflow-hidden animate-fadeIn my-auto">
+            <div class="bg-emerald-700 text-white px-6 py-4 flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <span class="text-2xl">✅</span>
+                    <div>
+                        <h3 class="font-extrabold text-sm sm:text-base">Cerrar Atención - Resultado Clínico</h3>
+                        <p id="completePatientLabel" class="text-[11px] text-emerald-200 truncate max-w-xs">Paciente ---</p>
+                    </div>
+                </div>
+                <button onclick="closeCompleteAttentionModal()" class="text-emerald-200 hover:text-white text-xl font-bold p-1">✕</button>
+            </div>
+
+            <form id="completeForm" onsubmit="completeAttention(event)" class="p-5 sm:p-6 space-y-4">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                        <label class="text-[10px] font-bold text-slate-500 uppercase block mb-1">Médico Asignado</label>
+                        <input type="text" id="completeMedico" placeholder="Dr. Guardia Triaje" class="filter-input w-full px-3 py-2 text-xs rounded-xl font-semibold">
+                    </div>
+                    <div>
+                        <label class="text-[10px] font-bold text-slate-500 uppercase block mb-1">Área de Destino</label>
+                        <select id="completeArea" class="filter-input w-full px-3 py-2 text-xs rounded-xl font-semibold">
+                            <option>Emergencia</option>
+                            <option>Observación</option>
+                            <option>Hospitalización</option>
+                            <option>Shockroom</option>
+                            <option>Consulta Externa</option>
+                            <option>Cirugía</option>
+                            <option>Alta</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="text-[10px] font-bold text-slate-500 uppercase block mb-1">Diagnóstico de Alta *</label>
+                    <textarea id="completeDiagnostico" rows="2" required placeholder="Diagnóstico clínico de la atención..." class="filter-input w-full p-2.5 text-xs rounded-xl"></textarea>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                        <label class="text-[10px] font-bold text-slate-500 uppercase block mb-1">Medicación Aplicada</label>
+                        <input type="text" id="completeMedicacion" placeholder="Ej: paracetamol 1g EV (vacío = ninguno)" class="filter-input w-full px-3 py-2 text-xs rounded-xl">
+                    </div>
+                    <div>
+                        <label class="text-[10px] font-bold text-slate-500 uppercase block mb-1">Vacuna Aplicada</label>
+                        <input type="text" id="completeVacuna" placeholder="Ej: Antitetánica (vacío = ninguno)" class="filter-input w-full px-3 py-2 text-xs rounded-xl">
+                    </div>
+                </div>
+
+                <div class="flex items-center justify-end gap-3 pt-3 border-t border-slate-100">
+                    <button type="button" onclick="closeCompleteAttentionModal()" class="px-4 py-2 rounded-xl text-xs font-extrabold text-slate-500 hover:bg-slate-100 transition-all">Cancelar</button>
+                    <button type="submit" class="px-5 py-2 rounded-xl text-xs font-extrabold text-white bg-emerald-700 hover:bg-emerald-800 shadow-md transition-all uppercase tracking-wider">
+                        ✔ Guardar Resultado
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- DRAWER: FICHA CLÍNICA DETALLADA -->
     <div id="patientDrawer" class="fixed inset-0 z-50 hidden bg-slate-900/40 backdrop-blur-xs flex justify-end">
         <div class="w-full max-w-md bg-white h-full shadow-2xl flex flex-col justify-between animate-fadeIn">
@@ -608,6 +766,40 @@
                     <div>
                         <h4 class="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider mb-1.5">Categoría de Riesgo ESI</h4>
                         <div id="drawerBadgeContainer"></div>
+                    </div>
+
+                    <div>
+                        <h4 class="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider mb-2">Flujo de Atención</h4>
+                        <div class="p-3 bg-slate-50 rounded-2xl border border-slate-200/80 space-y-2">
+                            <div class="flex items-center justify-between">
+                                <span class="text-[9px] font-bold text-slate-400 uppercase">Estado</span>
+                                <span id="drawerEstado" class="text-[9px] px-2 py-0.5 rounded-full border font-extrabold">---</span>
+                            </div>
+                            <div class="flex items-center justify-between">
+                                <span class="text-[9px] font-bold text-slate-400 uppercase">Médico</span>
+                                <span id="drawerMedico" class="text-[9px] font-bold text-slate-700">---</span>
+                            </div>
+                            <div class="flex items-center justify-between">
+                                <span class="text-[9px] font-bold text-slate-400 uppercase">Área Destino</span>
+                                <span id="drawerArea" class="text-[9px] font-bold text-slate-700">---</span>
+                            </div>
+                            <div class="flex items-center justify-between">
+                                <span class="text-[9px] font-bold text-slate-400 uppercase">Espera</span>
+                                <span id="drawerEspera" class="text-[9px] font-bold text-slate-700 font-mono">---</span>
+                            </div>
+                            <div class="flex items-center justify-between">
+                                <span class="text-[9px] font-bold text-slate-400 uppercase">Medicación</span>
+                                <span id="drawerMedicacion" class="text-[9px] font-bold text-slate-700 italic">---</span>
+                            </div>
+                            <div class="flex items-center justify-between">
+                                <span class="text-[9px] font-bold text-slate-400 uppercase">Vacuna</span>
+                                <span id="drawerVacuna" class="text-[9px] font-bold text-slate-700 italic">---</span>
+                            </div>
+                            <div>
+                                <p class="text-[9px] font-bold text-slate-400 uppercase mb-0.5">Diagnóstico</p>
+                                <p id="drawerDiagnostico" class="text-[10px] font-bold text-slate-800 italic leading-relaxed">Sin diagnóstico</p>
+                            </div>
+                        </div>
                     </div>
 
                     <div>
@@ -678,8 +870,10 @@
     <div id="toastContainer" class="fixed bottom-5 right-5 z-50 space-y-2 pointer-events-none"></div>
 
     <script>
-        // --- BASE DE DATOS TRIAJE EXPANDIDA PARA PRUEBAS DE PAGINACIÓN ---
-        let RAW_DATA = [
+        // --- PERSISTENCIA LOCAL (localStorage) CON SEED DE DEMO ---
+        const STORAGE_KEY = 'sgh_triaje_v2';
+
+        const SEED_RAW = [
             { id: 1, hc: 'HC-009231', fecha: '2026-08-04', hora: '08:15', paciente: 'ZARATE MENDOZA, ELENA MARIA', dni: '09223341', edad: '62a', sexo: 'F', paSist: 150, paDiast: 95, fc: 110, fr: 24, sat: 91, t: 38.8, talla: 160, peso: 78, glucosa: 185, riesgo: 'critico', motivo: 'Dificultad respiratoria severa, tos continua y sensación febril intensa.' },
             { id: 2, hc: 'HC-008412', fecha: '2026-08-04', hora: '09:42', paciente: 'GOMEZ RIVERA, CARLOS AUGUSTO', dni: '45892231', edad: '45a', sexo: 'M', paSist: 120, paDiast: 80, fc: 72, fr: 16, sat: 98, t: 36.5, talla: 175, peso: 72, glucosa: 98, riesgo: 'estable', motivo: 'Chequeo general ambulatorio y leve dolor articular en rodilla.' },
             { id: 3, hc: 'HC-007501', fecha: '2026-08-04', hora: '10:05', paciente: 'QUISPE LAURA, JUAN SEBASTIAN', dni: '70221145', edad: '12a', sexo: 'M', paSist: 110, paDiast: 70, fc: 80, fr: 18, sat: 99, t: 37.1, talla: 142, peso: 38, glucosa: 90, riesgo: 'estable', motivo: 'Evaluación pediátrica por rash cutáneo alérgico leve.' },
@@ -697,14 +891,158 @@
             { id: 15, hc: 'HC-000411', fecha: '2026-08-04', hora: '17:25', paciente: 'REYES SALAZAR, GABRIEL OMAR', dni: '71998811', edad: '26a', sexo: 'M', paSist: 130, paDiast: 85, fc: 98, fr: 20, sat: 97, t: 38.3, talla: 176, peso: 79, glucosa: 112, riesgo: 'moderado', motivo: 'Odinofragia intensa con placas purulentas y fiebre.' }
         ];
 
+        function normalizeRecord(r) {
+            return Object.assign({}, {
+                estado: 'en_espera',
+                especialidad: '',
+                areaDestino: '',
+                diagnostico: '',
+                medico: '',
+                medicacion: '',
+                vacuna: '',
+                horaInicio: null,
+                horaFin: null
+            }, r);
+        }
+
+        function persistData() {
+            try { localStorage.setItem(STORAGE_KEY, JSON.stringify(RAW_DATA)); }
+            catch (err) { console.warn('No se pudo guardar en localStorage', err); }
+        }
+
+        function todayStr() {
+            return new Date().toISOString().split('T')[0];
+        }
+
+        function minToHhmm(totalMin) {
+            const h = Math.floor(totalMin / 60) % 24;
+            const m = totalMin % 60;
+            return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+        }
+
+        function addHhmm(hhmm, addMin) {
+            const [h, m] = hhmm.split(':').map(Number);
+            return minToHhmm(h * 60 + m + addMin);
+        }
+
+        function buildSeedData() {
+            const stateMap = {
+                1:  { estado: 'en_atencion', especialidad: 'Cardiología', medico: 'Dr. Guardia Triaje' },
+                2:  { estado: 'atendido', especialidad: 'Medicina General', diagnostico: 'Artrosis de rodilla izquierda', areaDestino: 'Alta', medico: 'Dra. Salas', medicacion: 'Paracetamol 1g VO', vacuna: '—' },
+                3:  { estado: 'atendido', especialidad: 'Pediatría', diagnostico: 'Dermatitis alérgica cutánea', areaDestino: 'Alta', medico: 'Dra. Salas', medicacion: 'Loratadina 10mg VO', vacuna: '—' },
+                4:  { estado: 'en_espera', especialidad: 'Medicina General' },
+                5:  { estado: 'en_atencion', especialidad: 'Medicina General', medico: 'Dr. Guardia Triaje' },
+                6:  { estado: 'en_espera', especialidad: 'Neurología' },
+                7:  { estado: 'en_espera', especialidad: 'Medicina General' },
+                8:  { estado: 'atendido', especialidad: 'Traumatología', diagnostico: 'Esguince de tobillo derecho G-I', areaDestino: 'Alta', medico: 'Dra. Salas', medicacion: 'Ibuprofeno 400mg VO', vacuna: 'Antitetánica colocada' },
+                9:  { estado: 'en_espera', especialidad: 'Cirugía General' },
+                10: { estado: 'en_espera', especialidad: 'Medicina General' },
+                11: { estado: 'atendido', especialidad: 'Cirugía General', diagnostico: 'Herida cortante antebrazo derecho', areaDestino: 'Alta', medico: 'Dra. Salas', medicacion: 'Sutura + antibiótico profiláctico', vacuna: 'Antitetánica colocada' },
+                12: { estado: 'en_atencion', especialidad: 'Cardiología', medico: 'Dr. Guardia Triaje' },
+                13: { estado: 'en_espera', especialidad: 'Medicina General' },
+                14: { estado: 'atendido', especialidad: 'Traumatología', diagnostico: 'Lumbalgia mecánica post-esfuerzo', areaDestino: 'Alta', medico: 'Dra. Salas', medicacion: 'Diclofenaco 75mg IM', vacuna: '—' },
+                15: { estado: 'en_espera', especialidad: 'Otorrinolaringología' }
+            };
+
+            const activeIds = [1, 4, 5, 6, 7, 9, 10, 12, 13, 15];
+            const backMinutes = { 1: 22, 4: 150, 5: 38, 6: 45, 7: 92, 9: 30, 10: 12, 12: 8, 13: 70, 15: 55 };
+            const now = new Date();
+            const nowMin = now.getHours() * 60 + now.getMinutes();
+
+            return SEED_RAW.map(r => {
+                const conf = stateMap[r.id] || {};
+                const rec = normalizeRecord(Object.assign({}, r, conf));
+                if (activeIds.includes(r.id)) {
+                    rec.fecha = todayStr();
+                    rec.hora = minToHhmm(Math.max(0, nowMin - (backMinutes[r.id] || 30)));
+                    if (rec.estado === 'en_atencion') {
+                        rec.horaInicio = minToHhmm(Math.max(0, nowMin - Math.max(0, (backMinutes[r.id] || 30) - 15)));
+                    }
+                } else {
+                    rec.horaInicio = addHhmm(rec.hora, 25);
+                    rec.horaFin = addHhmm(rec.hora, 70);
+                }
+                return rec;
+            });
+        }
+
+        function loadData() {
+            try {
+                const raw = localStorage.getItem(STORAGE_KEY);
+                if (raw) {
+                    const parsed = JSON.parse(raw);
+                    if (Array.isArray(parsed) && parsed.length > 0) return parsed.map(normalizeRecord);
+                }
+            } catch (err) {
+                console.warn('localStorage corrupto; regenerando demo', err);
+            }
+            const seed = buildSeedData();
+            try { localStorage.setItem(STORAGE_KEY, JSON.stringify(seed)); } catch (err) {}
+            return seed;
+        }
+
+        let RAW_DATA = loadData();
+
         let filteredData = [...RAW_DATA];
         let currentSelectedPatient = null;
         let flowChartInstance = null;
         let priorityChartInstance = null;
+        let analyticsCharts = {};
+        let dashboardChartsInited = false;
+        let analyticsChartsInited = false;
+        let completingPatientId = null;
+        let queueTimer = null;
 
         // Estado de Paginación
         let currentPage = 1;
         let itemsPerPage = 10;
+
+        const PRIORITY_ORDER = { critico: 0, alto: 1, moderado: 2, estable: 3 };
+
+        function nowTime() {
+            const d = new Date();
+            return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+        }
+
+        function admissionTime(r) {
+            return new Date(`${r.fecha}T${(r.hora || '00:00')}:00`).getTime();
+        }
+
+        function formatDuration(ms) {
+            const totalMin = Math.max(0, Math.floor(ms / 60000));
+            const h = Math.floor(totalMin / 60);
+            const m = totalMin % 60;
+            return h > 0 ? `${h}h ${String(m).padStart(2, '0')}m` : `${m}m`;
+        }
+
+        function formatDurationClock(ms) {
+            const s = Math.max(0, Math.floor(ms / 1000));
+            return `${String(Math.floor(s / 3600)).padStart(2, '0')}:${String(Math.floor((s % 3600) / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
+        }
+
+        function estadoInfo(estado) {
+            if (estado === 'en_atencion') return { text: 'En Atención', cls: 'bg-blue-50 text-blue-700 border-blue-200' };
+            if (estado === 'atendido') return { text: 'Atendido', cls: 'bg-emerald-50 text-emerald-700 border-emerald-200' };
+            return { text: 'En Espera', cls: 'bg-amber-50 text-amber-700 border-amber-200' };
+        }
+
+        function priorityOrder(r) { return PRIORITY_ORDER[r.riesgo] != null ? PRIORITY_ORDER[r.riesgo] : 4; }
+
+        function priorityBadge(r) {
+            if (r.riesgo === 'critico') return { text: 'P-I • CRÍTICO', cls: 'bg-red-50 text-red-700 border-red-200 font-black', card: 'border-red-200' };
+            if (r.riesgo === 'alto') return { text: 'P-II • URGENTE', cls: 'bg-orange-50 text-orange-700 border-orange-200 font-extrabold', card: 'border-orange-200' };
+            if (r.riesgo === 'moderado') return { text: 'P-III • MODERADO', cls: 'bg-amber-50 text-amber-700 border-amber-200 font-bold', card: 'border-amber-200' };
+            return { text: 'P-IV • ESTABLE', cls: 'bg-emerald-50 text-emerald-700 border-emerald-200 font-bold', card: 'border-emerald-200' };
+        }
+
+        function patientWaitMinutes(r) {
+            const a = admissionTime(r);
+            if (r.estado === 'atendido' && r.horaInicio) {
+                const s = new Date(`${r.fecha}T${r.horaInicio}:00`).getTime();
+                return Math.max(0, (s - a) / 60000);
+            }
+            return Math.max(0, (Date.now() - a) / 60000);
+        }
 
         const formatDate = (dateStr) => {
             if (!dateStr) return '';
@@ -892,6 +1230,9 @@
                         <td class="px-4 py-3">
                             <p class="font-bold text-slate-800 font-mono text-xs">${formatDate(row.fecha)}</p>
                             <p class="text-[10px] text-slate-500 font-medium">${row.hora} hrs</p>
+                            <span class="inline-block mt-1 text-[8px] px-1.5 py-0.5 rounded-full border font-extrabold ${estadoInfo(row.estado).cls}">
+                                ${estadoInfo(row.estado).text}
+                            </span>
                         </td>
                         <td class="px-4 py-3">
                             <div class="flex flex-col gap-0.5">
@@ -930,9 +1271,16 @@
                             </span>
                         </td>
                         <td class="px-3 py-3 text-center">
-                            <button onclick="openPatientDrawer(${row.id})" class="bg-slate-100 hover:bg-brand-50 text-slate-700 hover:text-brand-700 px-2.5 py-1 rounded-lg font-bold text-xs transition-all border border-slate-200">
-                                👁️ Ficha
-                            </button>
+                            <div class="flex items-center justify-center gap-1.5">
+                                <button onclick="openPatientDrawer(${row.id})" title="Ver ficha clínica" class="bg-slate-100 hover:bg-brand-50 text-slate-700 hover:text-brand-700 px-2.5 py-1 rounded-lg font-bold text-xs transition-all border border-slate-200">
+                                    👁️
+                                </button>
+                                ${row.estado === 'en_espera'
+                                    ? `<button onclick="startAttention(${row.id})" title="Iniciar atención" class="bg-blue-600 hover:bg-blue-700 text-white px-2.5 py-1 rounded-lg font-bold text-xs transition-all shadow-sm">▶ Iniciar</button>`
+                                    : row.estado === 'en_atencion'
+                                    ? `<button onclick="openCompleteAttentionModal(${row.id})" title="Cerrar atención" class="bg-emerald-600 hover:bg-emerald-700 text-white px-2.5 py-1 rounded-lg font-bold text-xs transition-all shadow-sm">✔ Cerrar</button>`
+                                    : `<button onclick="reopenAttention(${row.id})" title="Reabrir atención" class="bg-slate-100 hover:bg-slate-200 text-slate-500 px-2 py-1 rounded-lg font-bold text-xs transition-all border border-slate-200">↺</button>`}
+                            </div>
                         </td>
                     </tr>
                 `;
@@ -994,8 +1342,16 @@
         }
 
         function updateStats() {
+            const hoy = todayStr();
+
             const elTotal = document.getElementById('statTotal');
             if (elTotal) elTotal.innerText = RAW_DATA.length;
+
+            const elP1 = document.getElementById('statP1');
+            if (elP1) elP1.innerText = RAW_DATA.filter(r => r.riesgo === 'critico').length;
+
+            const elP2 = document.getElementById('statP2');
+            if (elP2) elP2.innerText = RAW_DATA.filter(r => r.riesgo === 'alto').length;
 
             const elCritical = document.getElementById('statCritical');
             if (elCritical) {
@@ -1003,12 +1359,19 @@
                 elCritical.innerText = `${criticals} hoy`;
             }
 
+            const todayRecords = RAW_DATA.filter(r => r.fecha === hoy);
+            if (todayRecords.length > 0) {
+                const avg = todayRecords.reduce((acc, r) => acc + patientWaitMinutes(r), 0) / todayRecords.length;
+                const elWait = document.getElementById('statWait');
+                if (elWait) elWait.innerText = `${Math.round(avg)} min`;
+            }
+
             if (priorityChartInstance && priorityChartInstance.data && priorityChartInstance.data.datasets[0]) {
                 const countStables = RAW_DATA.filter(r => r.riesgo === 'estable').length;
                 const countMod = RAW_DATA.filter(r => r.riesgo === 'moderado').length;
                 const countHigh = RAW_DATA.filter(r => r.riesgo === 'alto').length;
                 const countCrit = RAW_DATA.filter(r => r.riesgo === 'critico').length;
-                
+
                 priorityChartInstance.data.datasets[0].data = [countStables, countMod, countHigh, countCrit];
                 priorityChartInstance.update();
             }
@@ -1034,6 +1397,7 @@
             const hc = document.getElementById('formHc').value || `HC-00${Math.floor(1000 + Math.random() * 9000)}`;
             const edad = document.getElementById('formEdad').value;
             const sexo = document.getElementById('formSexo').value;
+            const especialidad = document.getElementById('formEspecialidad').value;
             
             const paSist = parseInt(document.getElementById('formPaSist').value);
             const paDiast = parseInt(document.getElementById('formPaDiast').value);
@@ -1058,6 +1422,7 @@
                 dni,
                 edad,
                 sexo,
+                especialidad,
                 paSist,
                 paDiast,
                 fc,
@@ -1068,11 +1433,21 @@
                 peso,
                 glucosa,
                 riesgo: autoRiesgo,
-                motivo
+                motivo,
+                estado: 'en_espera',
+                areaDestino: '',
+                diagnostico: '',
+                medico: '',
+                medicacion: '',
+                vacuna: '',
+                horaInicio: null,
+                horaFin: null
             };
 
             RAW_DATA.unshift(newRecord);
+            persistData();
             executeFilter();
+            renderQueue();
             closeNewTriageModal();
             triggerToast(`Paciente ${paciente} clasificado: ${autoRiesgo.toUpperCase()}`, autoRiesgo === 'critico' ? 'danger' : 'success');
         }
@@ -1100,6 +1475,16 @@
             document.getElementById('drawerImc').innerText = imc ? `IMC: ${imc} Kg/m²` : 'IMC: N/A';
 
             document.getElementById('drawerMotivo').innerText = patient.motivo;
+
+            const est = estadoInfo(patient.estado);
+            document.getElementById('drawerEstado').innerText = `${est.text}`;
+            document.getElementById('drawerEstado').className = `text-[9px] px-2 py-0.5 rounded-full border font-extrabold ${est.cls}`;
+            document.getElementById('drawerMedico').innerText = patient.medico || 'Por asignar';
+            document.getElementById('drawerArea').innerText = patient.areaDestino || 'Por definir';
+            document.getElementById('drawerEspera').innerText = formatDuration(patientWaitMinutes(patient) * 60000);
+            document.getElementById('drawerMedicacion').innerText = patient.medicacion || 'Ninguna';
+            document.getElementById('drawerVacuna').innerText = patient.vacuna || 'Ninguna';
+            document.getElementById('drawerDiagnostico').innerText = patient.diagnostico || 'Sin diagnóstico registrado';
 
             const alerts = evaluateClinicalAlerts(patient);
             const alertsContainer = document.getElementById('drawerAlertsList');
@@ -1134,9 +1519,10 @@
         }
 
         function exportToCSV() {
-            let csvContent = "data:text/csv;charset=utf-8,Fecha,Hora,Paciente,DNI,HC,Edad,Sexo,PA_Sist,PA_Diast,FC,FR,SpO2,Temp,Glucosa,Riesgo\n";
+            let csvContent = "data:text/csv;charset=utf-8,Fecha,Hora,Paciente,DNI,HC,Edad,Sexo,Especialidad,Estado,PA_Sist,PA_Diast,FC,FR,SpO2,Temp,Glucosa,Riesgo,Medico,Diagnostico,Area_Destino,Medicacion,Vacuna\n";
             filteredData.forEach(r => {
-                csvContent += `${r.fecha},${r.hora},"${r.paciente}",${r.dni},${r.hc},${r.edad},${r.sexo},${r.paSist},${r.paDiast},${r.fc},${r.fr},${r.sat},${r.t},${r.glucosa || ''},${r.riesgo}\n`;
+                const q = (v) => `"${v}"`;
+                csvContent += `${r.fecha},${r.hora},${q(r.paciente)},${r.dni},${r.hc},${r.edad},${r.sexo},${r.especialidad || ''},${r.estado},${r.paSist},${r.paDiast},${r.fc},${r.fr},${r.sat},${r.t},${r.glucosa || ''},${r.riesgo},${q(r.medico || '')},${q(r.diagnostico || '')},${q(r.areaDestino || '')},${q(r.medicacion || '')},${q(r.vacuna || '')}\n`;
             });
             const encodedUri = encodeURI(csvContent);
             const link = document.createElement("a");
@@ -1161,24 +1547,33 @@
 
             const titles = {
                 'dashboard': 'Dashboard Real-Time de Triaje',
+                'cola': 'Cola de Espera en Tiempo Real',
                 'reporte': 'Reporte de Triaje General',
                 'estadisticas': 'Analítica Operativa de Guardia'
             };
             const titleEl = document.getElementById('viewTitle');
             if (titleEl) titleEl.innerText = titles[view] || 'Triaje Hospital Ventanilla';
+
+            if (view === 'dashboard') initCharts();
+            if (view === 'cola') renderQueue();
+            if (view === 'estadisticas') refreshAnalytics();
+            if (view === 'reporte') executeFilter();
         }
 
         function initCharts() {
+            if (dashboardChartsInited) return;
+            dashboardChartsInited = true;
+
             const flowCanvas = document.getElementById('flowChart');
             if (flowCanvas && typeof Chart !== 'undefined') {
                 const ctxFlow = flowCanvas.getContext('2d');
                 flowChartInstance = new Chart(ctxFlow, {
                     type: 'line',
                     data: {
-                        labels: ['00:00', '04:00', '08:00', '12:00', '16:00', '20:00'],
+                        labels: [],
                         datasets: [{
                             label: 'Pacientes/Hora',
-                            data: [12, 6, 48, 65, 42, 28],
+                            data: [],
                             borderColor: '#1d4ed8',
                             backgroundColor: 'rgba(29, 78, 216, 0.08)',
                             fill: true,
@@ -1193,8 +1588,8 @@
                         maintainAspectRatio: false,
                         plugins: { legend: { display: false } },
                         scales: {
-                            y: { grid: { color: '#f1f5f9' }, ticks: { font: { size: 9 } } },
-                            x: { grid: { display: false }, ticks: { font: { size: 9 } } }
+                            y: { beginAtZero: true, grid: { color: '#f1f5f9' }, ticks: { font: { size: 9 }, precision: 0 } },
+                            x: { grid: { display: false }, ticks: { font: { size: 8 } } }
                         }
                     }
                 });
@@ -1227,12 +1622,54 @@
                     }
                 });
             }
+
+            refreshFlowChartData();
         }
+
+        function refreshFlowChartData() {
+            if (!flowChartInstance) return;
+            const buckets = new Array(24).fill(0);
+            RAW_DATA.forEach(r => {
+                const h = parseInt((r.hora || '00').slice(0, 2), 10);
+                buckets[h] = (buckets[h] || 0) + 1;
+            });
+            const labels = buckets.map((_, i) => `${String(i).padStart(2, '0')}:00`);
+            flowChartInstance.data.labels = labels;
+            flowChartInstance.data.datasets[0].data = buckets;
+            flowChartInstance.update();
+        }
+
+        function refreshCurrentView() {
+            const activeView = document.querySelector('.view-section.active');
+            if (!activeView) return;
+            const id = activeView.id.replace('view-', '');
+            if (id === 'cola') renderQueue();
+            else if (id === 'reporte') renderTable();
+            else if (id === 'dashboard') {
+                if (dashboardChartsInited) refreshFlowChartData();
+                updateStats();
+            } else if (id === 'estadisticas') refreshAnalytics();
+        }
+
+        window.addEventListener('storage', (e) => {
+            if (e.key !== STORAGE_KEY || !e.newValue) return;
+            try {
+                RAW_DATA = JSON.parse(e.newValue).map(normalizeRecord);
+                executeFilter();
+                renderQueue();
+                refreshCurrentView();
+            } catch (err) {
+                console.warn('No se pudo sincronizar desde otra pestaña', err);
+            }
+        });
 
         window.onload = function() {
             renderTable();
-            initCharts();
+            renderQueue();
             updateStats();
+            queueTimer = setInterval(() => {
+                refreshCurrentView();
+            }, 5000);
             const dateHeader = document.getElementById('currentDateHeader');
             if (dateHeader) {
                 dateHeader.innerText = formatDate(new Date().toISOString().split('T')[0]);
@@ -1240,6 +1677,260 @@
         };
 
         let isCollapsed = false;
+
+        // ============ FLUJO DE ATENCIÓN ============
+        function startAttention(id) {
+            const p = RAW_DATA.find(x => x.id === id);
+            if (!p || p.estado !== 'en_espera') return;
+            p.estado = 'en_atencion';
+            p.medico = p.medico || 'Dr. Guardia Triaje';
+            p.horaInicio = nowTime();
+            persistData();
+            executeFilter();
+            renderQueue();
+            updateStats();
+            triggerToast(`Atención iniciada de ${p.paciente} por ${p.medico}`, 'success');
+        }
+
+        function openCompleteAttentionModal(id) {
+            const p = RAW_DATA.find(x => x.id === id);
+            if (!p) return;
+            completingPatientId = id;
+            document.getElementById('completePatientLabel').innerText = p.paciente;
+            document.getElementById('completeMedico').value = p.medico || '';
+            document.getElementById('completeDiagnostico').value = p.diagnostico || '';
+            document.getElementById('completeArea').value = p.areaDestino || 'Emergencia';
+            document.getElementById('completeMedicacion').value = p.medicacion || '';
+            document.getElementById('completeVacuna').value = p.vacuna || '';
+            document.getElementById('completeModal').classList.remove('hidden');
+        }
+
+        function closeCompleteAttentionModal() {
+            document.getElementById('completeModal').classList.add('hidden');
+            completingPatientId = null;
+        }
+
+        function completeAttention(e) {
+            e.preventDefault();
+            const p = RAW_DATA.find(x => x.id === completingPatientId);
+            if (!p) return;
+            p.estado = 'atendido';
+            p.medico = document.getElementById('completeMedico').value || p.medico || 'Dr. Guardia Triaje';
+            p.diagnostico = document.getElementById('completeDiagnostico').value;
+            p.areaDestino = document.getElementById('completeArea').value;
+            p.medicacion = document.getElementById('completeMedicacion').value;
+            p.vacuna = document.getElementById('completeVacuna').value;
+            p.horaFin = nowTime();
+            persistData();
+            executeFilter();
+            renderQueue();
+            closeCompleteAttentionModal();
+            updateStats();
+            triggerToast(`Atención de ${p.paciente} cerrada hacia ${p.areaDestino}`, 'success');
+        }
+
+        function reopenAttention(id) {
+            const p = RAW_DATA.find(x => x.id === id);
+            if (!p) return;
+            p.estado = 'en_atencion';
+            p.horaInicio = nowTime();
+            p.horaFin = null;
+            persistData();
+            executeFilter();
+            renderQueue();
+            updateStats();
+            triggerToast(`Atención reabierta de ${p.paciente}`, 'info');
+        }
+
+        // ============ COLA DE ESPERA ============
+        function renderQueue() {
+            const waitingEl = document.getElementById('queueWaitingList');
+            const activeEl = document.getElementById('queueActiveList');
+            const doneEl = document.getElementById('queueDoneList');
+            if (!waitingEl || !activeEl || !doneEl) return;
+
+            const now = Date.now();
+            const waiting = RAW_DATA.filter(r => r.estado === 'en_espera')
+                .sort((a, b) => priorityOrder(a) - priorityOrder(b) || admissionTime(a) - admissionTime(b));
+            const active = RAW_DATA.filter(r => r.estado === 'en_atencion')
+                .sort((a, b) => admissionTime(a) - admissionTime(b));
+            const done = RAW_DATA.filter(r => r.estado === 'atendido')
+                .sort((a, b) => b.fecha.localeCompare(a.fecha) || b.hora.localeCompare(a.hora));
+
+            waitingEl.innerHTML = waiting.length
+                ? waiting.map(r => queueCard(r, 'waiting', now)).join('')
+                : queueEmptyMsg('⏳ Sin pacientes en espera');
+            activeEl.innerHTML = active.length
+                ? active.map(r => queueCard(r, 'active', now)).join('')
+                : queueEmptyMsg('🔵 Sin pacientes en atención');
+            doneEl.innerHTML = done.length
+                ? done.map(r => doneCard(r)).join('')
+                : queueEmptyMsg('🟢 Sin pacientes atendidos');
+
+            const setNum = (id, val) => { const el = document.getElementById(id); if (el) el.innerText = val; };
+            setNum('queueWaiting', waiting.length);
+            setNum('queueActive', active.length);
+            setNum('queueDone', done.length);
+            const maxWaitMs = waiting.length ? Math.max(...waiting.map(r => now - admissionTime(r))) : 0;
+            setNum('queueMax', formatDuration(maxWaitMs));
+
+            updateStats();
+        }
+
+        function queueEmptyMsg(txt) {
+            return `<div class="py-8 text-center flex flex-col items-center border-2 border-dashed border-slate-200 rounded-2xl">
+                <p class="text-slate-400 font-bold text-xs">${txt}</p>
+            </div>`;
+        }
+
+        function queueCard(r, mode, now) {
+            const pb = priorityBadge(r);
+            const elapsed = mode === 'active'
+                ? (r.horaInicio ? Date.now() - new Date(`${r.fecha}T${r.horaInicio}:00`).getTime() : now - admissionTime(r))
+                : now - admissionTime(r);
+            const warn = elapsed > 15 * 60000;
+            const timerHtml = `<span class="font-mono text-[10px] font-extrabold px-2 py-1 rounded-lg border flex items-center gap-1 ${
+                mode === 'active' ? 'bg-blue-50 text-blue-700 border-blue-200'
+                : warn ? 'bg-red-50 text-red-700 border-red-200' : 'bg-slate-50 text-slate-600 border-slate-200'}">⏱ ${formatDurationClock(elapsed)}${warn && mode === 'waiting' ? ' ⚠' : ''}</span>`;
+
+            const action = mode === 'waiting'
+                ? `<button onclick="startAttention(${r.id})" class="bg-blue-600 hover:bg-blue-700 text-white px-2.5 py-1.5 rounded-xl font-extrabold text-xs transition-all shadow-sm shrink-0">▶ Iniciar</button>`
+                : `<button onclick="openCompleteAttentionModal(${r.id})" class="bg-emerald-600 hover:bg-emerald-700 text-white px-2.5 py-1.5 rounded-xl font-extrabold text-xs transition-all shadow-sm shrink-0">✔ Cerrar</button>`;
+
+            return `
+                <div class="flex items-center justify-between gap-3 p-3 rounded-2xl border bg-white ${pb.card}">
+                    <div class="flex items-center gap-2.5 min-w-0">
+                        ${timerHtml}
+                        <div class="min-w-0">
+                            <p class="font-extrabold text-slate-800 text-xs uppercase leading-snug truncate">${r.paciente}</p>
+                            <p class="text-[9px] text-slate-500 font-bold truncate">${r.hc} · ${r.edad}/${r.sexo}${r.estado === 'en_atencion' && r.medico ? ` · ${r.medico}` : ''}</p>
+                            <p class="text-[9px] text-slate-400 italic truncate">"${r.motivo}"</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2 shrink-0">
+                        <span class="text-[8px] px-2 py-0.5 rounded-full border pointer-events-none ${pb.cls}">${pb.text}</span>
+                        ${action}
+                    </div>
+                </div>`;
+        }
+
+        function doneCard(r) {
+            const pb = priorityBadge(r);
+            return `
+                <div class="flex items-center justify-between gap-3 p-3 rounded-2xl border border-slate-200 bg-slate-50/60">
+                    <div class="flex items-center gap-2.5 min-w-0">
+                        <span class="w-2 h-2 rounded-full bg-emerald-500 shrink-0"></span>
+                        <div class="min-w-0">
+                            <p class="font-extrabold text-slate-800 text-xs uppercase truncate">${r.paciente}</p>
+                            <p class="text-[9px] text-slate-500 font-bold truncate">${formatDate(r.fecha)} · ${r.hora} · ${r.diagnostico || 'Sin diagnóstico'}</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2 shrink-0">
+                        ${r.areaDestino ? `<span class="text-[8px] px-2 py-0.5 rounded-full border border-indigo-200 bg-indigo-50 text-indigo-700 font-extrabold">→ ${r.areaDestino}</span>` : ''}
+                        <button onclick="openPatientDrawer(${r.id})" class="bg-white hover:bg-brand-50 text-slate-600 hover:text-brand-700 border border-slate-200 px-2 py-1 rounded-lg font-bold text-xs transition-all">👁️</button>
+                    </div>
+                </div>`;
+        }
+
+        // ============ ANALÍTICA AVANZADA ============
+        function chartPalette(count) {
+            const colors = ['#2563eb', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#f97316', '#ec4899', '#64748b', '#84cc16'];
+            return count.map((_, i) => colors[i % colors.length]);
+        }
+
+        function ensureAnalyticsCharts() {
+            if (analyticsChartsInited || typeof Chart === 'undefined') return;
+            analyticsChartsInited = true;
+            const make = (id, type) => {
+                const canvas = document.getElementById(id);
+                if (!canvas) return null;
+                return new Chart(canvas.getContext('2d'), {
+                    type,
+                    data: { labels: [], datasets: [{ data: [], backgroundColor: [], borderWidth: type === 'bar' ? 2 : 3, borderColor: '#ffffff' }] },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { position: 'bottom', labels: { boxWidth: 8, usePointStyle: true, font: { size: 9, weight: 'bold' } } },
+                            tooltip: { bodyFont: { size: 10 }, titleFont: { size: 11, weight: 'bold' } }
+                        },
+                        scales: type === 'bar' ? {
+                            y: { beginAtZero: true, grid: { color: '#f1f5f9' }, ticks: { font: { size: 9 }, precision: 0 } },
+                            x: { grid: { display: false }, ticks: { font: { size: 8 } } }
+                        } : {}
+                    }
+                });
+            };
+            analyticsCharts.hour = make('analyticsHourChart', 'bar');
+            analyticsCharts.priority = make('analyticsPriorityChart', 'doughnut');
+            analyticsCharts.specialty = make('analyticsSpecialtyChart', 'bar');
+            analyticsCharts.area = make('analyticsAreaChart', 'doughnut');
+            analyticsCharts.day = make('analyticsDayChart', 'line');
+        }
+
+        function setChartData(chart, { labels, values, colors, label, type }) {
+            if (!chart || !chart.data) return;
+            chart.data.labels = labels;
+            const ds = chart.data.datasets[0];
+            ds.data = values;
+            ds.backgroundColor = colors;
+            if (type === 'line') {
+                ds.borderColor = '#1d4ed8';
+                ds.fill = true;
+                ds.tension = 0.4;
+                ds.borderWidth = 2.5;
+                ds.pointBackgroundColor = '#1d4ed8';
+                ds.pointRadius = 3;
+            }
+            if (label) ds.label = label;
+            chart.update();
+        }
+
+        function countBy(arr, keyFn) {
+            const map = {};
+            arr.forEach(r => {
+                const k = keyFn(r) || 'Sin especificar';
+                map[k] = (map[k] || 0) + 1;
+            });
+            const labels = Object.keys(map);
+            return { labels, values: labels.map(l => map[l]) };
+        }
+
+        function refreshAnalytics() {
+            if (typeof Chart === 'undefined') return;
+            ensureAnalyticsCharts();
+
+            const hoy = todayStr();
+            const todayCount = RAW_DATA.filter(r => r.fecha === hoy).length;
+            const todayRecs = RAW_DATA.filter(r => r.fecha === hoy);
+            const avgWait = todayRecs.length
+                ? Math.round(todayRecs.reduce((acc, r) => acc + patientWaitMinutes(r), 0) / todayRecs.length)
+                : 0;
+            const setNum = (id, val) => { const el = document.getElementById(id); if (el) el.innerText = val; };
+            setNum('statHoy', todayCount);
+            setNum('statEsperaAna', RAW_DATA.filter(r => r.estado === 'en_espera').length);
+            setNum('statAtendiAna', RAW_DATA.filter(r => r.estado === 'atendido').length);
+            setNum('statEsperaPromAna', `${avgWait} min`);
+
+            const hourB = new Array(24).fill(0);
+            RAW_DATA.forEach(r => { hourB[parseInt((r.hora || '00').slice(0, 2), 10)]++; });
+            const hourLabels = hourB.map((_, i) => `${String(i).padStart(2, '0')}:00`);
+            setChartData(analyticsCharts.hour, { labels: hourLabels, values: hourB, label: 'Pacientes', colors: chartPalette(hourB), type: 'bar' });
+
+            const prioLabels = ['P-IV Estable', 'P-III Moderado', 'P-II Urgencia', 'P-I Crítico'];
+            const prioCounts = ['estable', 'moderado', 'alto', 'critico'].map(p => RAW_DATA.filter(r => r.riesgo === p).length);
+            setChartData(analyticsCharts.priority, { labels: prioLabels, values: prioCounts, colors: ['#10b981', '#eab308', '#f97316', '#ef4444'], type: 'doughnut' });
+
+            const spec = countBy(RAW_DATA, r => r.especialidad || 'Sin especificar');
+            setChartData(analyticsCharts.specialty, { labels: spec.labels, values: spec.values, colors: chartPalette(spec.values), type: 'bar' });
+
+            const area = countBy(RAW_DATA, r => r.areaDestino || 'Pendiente');
+            setChartData(analyticsCharts.area, { labels: area.labels, values: area.values, colors: chartPalette(area.values), type: 'doughnut' });
+
+            const dayLabels = countBy(RAW_DATA, r => r.fecha).labels.sort((a, b) => a.localeCompare(b));
+            const dayValues = dayLabels.map(d => RAW_DATA.filter(r => r.fecha === d).length);
+            setChartData(analyticsCharts.day, { labels: dayLabels.map(formatDate), values: dayValues, label: 'Pacientes', colors: ['#2563eb'], type: 'line' });
+        }
 
         function toggleSidebar() {
             const isMobile = window.innerWidth < 768;
