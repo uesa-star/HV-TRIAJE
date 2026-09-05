@@ -116,16 +116,7 @@
     <aside id="sidebar" class="w-full md:w-64 bg-white border-b md:border-b-0 md:border-r border-slate-200 flex flex-col shrink-0 transition-all duration-300 z-30">
         
         <!-- Header del Sidebar / Marca -->
-        <div class="h-16 md:h-20 flex items-center justify-between px-4 md:px-5 border-b border-slate-100 shrink-0">
-            <div class="flex items-center gap-3 overflow-hidden">
-                <div class="w-10 h-10 bg-brand-700 text-white rounded-2xl flex items-center justify-center font-black text-xl shadow-md shadow-brand-700/30 shrink-0">
-                    🏥
-                </div>
-                <div id="sidebarBrand" class="flex flex-col transition-opacity duration-200">
-                    <span class="font-extrabold text-slate-800 text-base leading-tight tracking-tight whitespace-nowrap">HOSPITAL</span>
-                    <span class="font-black text-brand-700 text-xs tracking-widest whitespace-nowrap">VENTANILLA</span>
-                </div>
-            </div>
+        <div class="h-16 md:h-20 flex items-center justify-end px-4 md:px-5 border-b border-slate-100 shrink-0">
             <button id="toggleBtn" onclick="toggleSidebar()" title="Colapsar / Expandir Menú" class="p-2 hover:bg-slate-100 rounded-xl text-slate-500 text-lg transition-colors">
                 ☰
             </button>
@@ -2055,7 +2046,6 @@
         function toggleSidebar() {
             const isMobile = window.innerWidth < 768;
             const sidebar = document.getElementById('sidebar');
-            const sidebarBrand = document.getElementById('sidebarBrand');
             const sidebarNav = document.getElementById('sidebarNav');
             const sidebarUser = document.getElementById('sidebarUser');
 
@@ -2081,10 +2071,6 @@
                         sidebar.classList.remove('md:w-20');
                         sidebar.classList.add('md:w-64');
                     }
-                }
-
-                if (sidebarBrand) {
-                    sidebarBrand.classList.toggle('hidden', isCollapsed);
                 }
 
                 // Ocultar/Mostrar etiquetas de texto
