@@ -125,29 +125,14 @@
 
         <!-- Menú de Opciones -->
         <nav id="sidebarNav" class="flex-1 p-3 space-y-1.5 overflow-y-auto custom-scrollbar">
-            <!-- Usuario & Estado del Servidor -->
-            <div id="sidebarUser" class="p-3 mb-1 rounded-2xl border border-slate-200 bg-slate-50/70">
-                <div class="flex items-center gap-3 overflow-hidden">
-                    <div class="w-9 h-9 rounded-full bg-brand-100 border-2 border-brand-500 flex items-center justify-center text-brand-800 font-extrabold text-xs shrink-0" title="Dr. Guardia Triaje">
-                        DR
-                    </div>
-                    <div class="sidebar-label flex flex-col min-w-0">
-                        <p class="text-xs font-bold text-slate-800 truncate">👤 Dr. Guardia Triaje</p>
-                        <p class="text-[10px] text-emerald-600 font-bold flex items-center gap-1">
-                            <span id="nodeStatusDot" class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span> <span id="nodeStatusText">Nodo: verificando…</span>
-                        </p>
-                    </div>
-                </div>
-            </div>
-
             <p class="sidebar-label text-[10px] font-black text-slate-400 uppercase tracking-widest px-3 py-2">Módulos de Atención</p>
             
-            <button onclick="switchView('ingreso')" id="nav-ingreso" title="Ingreso de Pacientes" class="nav-item w-full flex items-center px-3.5 py-3 rounded-2xl transition-all text-slate-600 hover:bg-slate-50 font-semibold text-xs gap-3">
+            <button onclick="switchView('ingreso')" id="nav-ingreso" title="Ingreso de Pacientes" class="nav-item w-full active-nav flex items-center px-3.5 py-3 rounded-2xl transition-all text-xs gap-3">
                 <span class="text-lg shrink-0">📝</span>
                 <span class="nav-label whitespace-nowrap">Ingreso de Pacientes</span>
             </button>
 
-            <button onclick="switchView('reporte')" id="nav-reporte" title="Reporte de Triaje" class="nav-item w-full active-nav flex items-center px-3.5 py-3 rounded-2xl transition-all text-xs gap-3">
+            <button onclick="switchView('reporte')" id="nav-reporte" title="Reporte de Triaje" class="nav-item w-full flex items-center px-3.5 py-3 rounded-2xl transition-all text-slate-600 hover:bg-slate-50 font-semibold text-xs gap-3">
                 <span class="text-lg shrink-0">📋</span>
                 <span class="nav-label whitespace-nowrap">Reporte de Triaje</span>
             </button>
@@ -191,7 +176,7 @@
                     </div>
                 </div>
                 <div>
-                    <h1 id="viewTitle" class="text-base md:text-xl font-extrabold text-slate-900 tracking-tight">Reporte de Triaje General</h1>
+                    <h1 id="viewTitle" class="text-base md:text-xl font-extrabold text-slate-900 tracking-tight">Ingreso de Pacientes</h1>
                     <div class="flex items-center gap-2 mt-0.5">
                         <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
                         <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Módulo Activo - Emergencias SGH</span>
@@ -225,6 +210,18 @@
                 <div class="text-right pl-2 border-l border-slate-200">
                     <p class="text-[10px] font-extrabold text-slate-400 uppercase">Fecha Sistema</p>
                     <p id="currentDateHeader" class="text-xs md:text-sm font-extrabold text-slate-800 font-mono">--.--.----</p>
+                </div>
+
+                <div class="hidden md:flex items-center gap-2.5 pl-3 border-l border-slate-200">
+                    <div class="w-8 h-8 rounded-full bg-brand-100 border-2 border-brand-500 flex items-center justify-center text-brand-800 font-extrabold text-[10px] shrink-0" title="Dr. Guardia Triaje">
+                        DR
+                    </div>
+                    <div class="flex flex-col">
+                        <span class="text-xs font-bold text-slate-800 whitespace-nowrap">👤 Dr. Guardia Triaje</span>
+                        <span class="text-[10px] font-bold flex items-center gap-1 text-amber-600" id="nodeStatusTextH">
+                            <span id="nodeStatusDotH" class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span><span id="nodeStatusLabelH">Modo Local</span>
+                        </span>
+                    </div>
                 </div>
             </div>
         </header>
@@ -300,7 +297,7 @@
             </section>
 
             <!-- ================= VISTA 2: REPORTE DE TRIAJE ================= -->
-            <section id="view-reporte" class="view-section active max-w-7xl mx-auto space-y-4">
+            <section id="view-reporte" class="view-section max-w-7xl mx-auto space-y-4">
                 
                 <div class="bg-white rounded-3xl border border-slate-200 shadow-xl shadow-slate-200/40 overflow-hidden">
                     
@@ -408,7 +405,7 @@
             </section>
 
             <!-- ================= VISTA 3: INGRESO DE PACIENTES ================= -->
-            <section id="view-ingreso" class="view-section max-w-7xl mx-auto space-y-4">
+            <section id="view-ingreso" class="view-section active max-w-7xl mx-auto space-y-4">
                 <div class="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
                     <div class="bg-brand-800 text-white px-6 py-4 flex items-center gap-3">
                         <span class="text-2xl">🩺</span>
@@ -423,13 +420,24 @@
                             <h4 class="text-xs font-extrabold text-brand-800 uppercase tracking-wider mb-2 flex items-center gap-1.5">
                                 <span>👤</span> 1. Filiación e Identificación del Paciente
                             </h4>
-                            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                            <div class="grid grid-cols-1 sm:grid-cols-4 gap-3">
                                 <div class="sm:col-span-2">
                                     <label class="text-[10px] font-bold text-slate-500 uppercase block mb-1">Apellidos y Nombres *</label>
                                     <input type="text" id="ingPaciente" required placeholder="Ej: PEREZ GARCIA, JUAN" class="filter-input w-full px-3 py-2 text-xs rounded-xl uppercase font-semibold">
                                 </div>
                                 <div>
-                                    <label class="text-[10px] font-bold text-slate-500 uppercase block mb-1">DNI / Doc *</label>
+                                    <label class="text-[10px] font-bold text-slate-500 uppercase block mb-1">Tipo Doc *</label>
+                                    <select id="ingTipoDoc" onchange="ajustarDoc('ing')" class="filter-input w-full px-3 py-2 text-xs rounded-xl font-semibold">
+                                        <option value="DNI">DNI</option>
+                                        <option value="C.E.">C.E. - Extranjería</option>
+                                        <option value="C.P.P.">C.P.P. - Permiso Temp.</option>
+                                        <option value="Pasaporte">Pasaporte</option>
+                                        <option value="Cédula Ext.">Cédula Extranjera</option>
+                                        <option value="Otro">Otro</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="text-[10px] font-bold text-slate-500 uppercase block mb-1">N° Documento *</label>
                                     <input type="text" id="ingDni" maxlength="8" required placeholder="8 dígitos" class="filter-input w-full px-3 py-2 text-xs rounded-xl font-mono">
                                 </div>
                             </div>
@@ -671,13 +679,24 @@
                     <h4 class="text-xs font-extrabold text-brand-800 uppercase tracking-wider mb-2 flex items-center gap-1.5">
                         <span>👤</span> 1. Filiación e Identificación del Paciente
                     </h4>
-                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div class="grid grid-cols-1 sm:grid-cols-4 gap-3">
                         <div class="sm:col-span-2">
                             <label class="text-[10px] font-bold text-slate-500 uppercase block mb-1">Apellidos y Nombres *</label>
                             <input type="text" id="formPaciente" required placeholder="Ej: PEREZ GARCIA, JUAN" class="filter-input w-full px-3 py-2 text-xs rounded-xl uppercase font-semibold">
                         </div>
                         <div>
-                            <label class="text-[10px] font-bold text-slate-500 uppercase block mb-1">DNI / Doc *</label>
+                            <label class="text-[10px] font-bold text-slate-500 uppercase block mb-1">Tipo Doc *</label>
+                            <select id="formTipoDoc" onchange="ajustarDoc('form')" class="filter-input w-full px-3 py-2 text-xs rounded-xl font-semibold">
+                                <option value="DNI">DNI</option>
+                                <option value="C.E.">C.E. - Extranjería</option>
+                                <option value="C.P.P.">C.P.P. - Permiso Temp.</option>
+                                <option value="Pasaporte">Pasaporte</option>
+                                <option value="Cédula Ext.">Cédula Extranjera</option>
+                                <option value="Otro">Otro</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="text-[10px] font-bold text-slate-500 uppercase block mb-1">N° Documento *</label>
                             <input type="text" id="formDni" maxlength="8" required placeholder="8 dígitos" class="filter-input w-full px-3 py-2 text-xs rounded-xl font-mono">
                         </div>
                     </div>
@@ -1034,6 +1053,7 @@
         function normalizeRecord(r) {
             return Object.assign({}, {
                 estado: 'en_espera',
+                tipoDoc: 'DNI',
                 especialidad: '',
                 areaDestino: '',
                 diagnostico: '',
@@ -1200,8 +1220,6 @@
             const badge = document.getElementById('connBadge');
             const dot = document.getElementById('connDot');
             const text = document.getElementById('connText');
-            const nodeText = document.getElementById('nodeStatusText');
-            const nodeDot = document.getElementById('nodeStatusDot');
             const online = apiChecked && apiOnline;
             if (badge) {
                 badge.classList.remove('bg-emerald-50', 'border-emerald-200', 'bg-amber-50', 'border-amber-200');
@@ -1212,8 +1230,12 @@
                 text.innerText = online ? 'Conectado al Nodo' : (apiChecked ? 'Sin conexión · Modo Local' : 'Conectando…');
                 text.className = 'text-[10px] font-extrabold uppercase ' + (online ? 'text-emerald-700' : 'text-amber-700');
             }
-            if (nodeText) nodeText.innerText = online ? 'Nodo: ' + API_CONFIG.baseUrl : (apiChecked ? 'Modo Local' : 'Verificando…');
-            if (nodeDot) nodeDot.className = 'w-1.5 h-1.5 rounded-full animate-pulse ' + (online ? 'bg-emerald-500' : 'bg-amber-500');
+            const nodeTextH = document.getElementById('nodeStatusTextH');
+            const nodeDotH = document.getElementById('nodeStatusDotH');
+            const nodeLabelH = document.getElementById('nodeStatusLabelH');
+            if (nodeLabelH) nodeLabelH.innerText = online ? 'Nodo' : (apiChecked ? 'Modo Local' : 'Verificando…');
+            if (nodeTextH) nodeTextH.className = 'text-[10px] font-bold flex items-center gap-1 ' + (online ? 'text-emerald-600' : 'text-amber-600');
+            if (nodeDotH) nodeDotH.className = 'w-1.5 h-1.5 rounded-full animate-pulse ' + (online ? 'bg-emerald-500' : 'bg-amber-500');
         }
 
         async function bootstrapApi() {
@@ -1479,7 +1501,7 @@
                             <div class="flex flex-col gap-0.5">
                                 <span class="font-extrabold text-slate-900 uppercase text-xs leading-snug">${row.paciente}</span>
                                 <div class="flex items-center gap-1.5 text-[10px]">
-                                    <span class="text-slate-500 font-mono">DNI: ${row.dni}</span>
+                                    <span class="text-slate-500 font-mono">${row.tipoDoc || 'DNI'}: ${row.dni}</span>
                                     <span class="text-brand-700 font-bold font-mono bg-blue-50 px-1 rounded">${row.hc}</span>
                                 </div>
                             </div>
@@ -1633,6 +1655,7 @@
         function readTriageInputs(prefix) {
             return {
                 paciente: document.getElementById(prefix + 'Paciente').value,
+                tipoDoc: document.getElementById(prefix + 'TipoDoc').value,
                 dni: document.getElementById(prefix + 'Dni').value,
                 hc: document.getElementById(prefix + 'Hc').value || `HC-00${Math.floor(1000 + Math.random() * 9000)}`,
                 edad: document.getElementById(prefix + 'Edad').value,
@@ -1660,6 +1683,7 @@
                 fecha: new Date().toISOString().split('T')[0],
                 hora: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
                 paciente: v.paciente,
+                tipoDoc: v.tipoDoc || 'DNI',
                 dni: v.dni,
                 edad: v.edad,
                 sexo: v.sexo,
@@ -1697,16 +1721,44 @@
             triggerToast(`Paciente ${rec.paciente} clasificado: ${rec.riesgo.toUpperCase()}`, rec.riesgo === 'critico' ? 'danger' : 'success');
         }
 
+        function ajustarDoc(prefix) {
+            const tipoEl = document.getElementById(prefix + 'TipoDoc');
+            const numEl = document.getElementById(prefix + 'Dni');
+            if (!tipoEl || !numEl) return;
+            if (tipoEl.value === 'DNI') {
+                numEl.maxLength = 8;
+                numEl.placeholder = '8 dígitos';
+            } else if (tipoEl.value === 'C.E.') {
+                numEl.maxLength = 9;
+                numEl.placeholder = '9 dígitos';
+            } else {
+                numEl.maxLength = 15;
+                numEl.placeholder = 'N° documento';
+            }
+        }
+
+        function validarDoc(v) {
+            if (!v.dni) return 'Ingrese el número de documento.';
+            if (v.tipoDoc === 'DNI' && !/^\d{8}$/.test(v.dni)) return 'El DNI debe tener 8 dígitos numéricos.';
+            return null;
+        }
+
         function saveNewTriage(e) {
             e.preventDefault();
-            const rec = createTriageRecord(readTriageInputs('form'));
+            const v = readTriageInputs('form');
+            const err = validarDoc(v);
+            if (err) { triggerToast(err, 'danger'); return; }
+            const rec = createTriageRecord(v);
             closeNewTriageModal();
             triageToast(rec);
         }
 
         function saveIngresoTriage(e) {
             e.preventDefault();
-            const rec = createTriageRecord(readTriageInputs('ing'));
+            const v = readTriageInputs('ing');
+            const err = validarDoc(v);
+            if (err) { triggerToast(err, 'danger'); return; }
+            const rec = createTriageRecord(v);
             const form = document.getElementById('ingresoForm');
             if (form) form.reset();
             triageToast(rec);
@@ -1720,7 +1772,7 @@
 
             document.getElementById('drawerPaciente').innerText = patient.paciente;
             document.getElementById('drawerHc').innerText = patient.hc;
-            document.getElementById('drawerDni').innerText = patient.dni;
+            document.getElementById('drawerDni').innerText = `${patient.tipoDoc || 'DNI'}: ${patient.dni}`;
             
             document.getElementById('drawerPa').innerText = `${patient.paSist} / ${patient.paDiast} mmHg`;
             document.getElementById('drawerFc').innerText = `${patient.fc} bpm`;
@@ -1779,10 +1831,10 @@
         }
 
         function exportToCSV() {
-            let csvContent = "data:text/csv;charset=utf-8,Fecha,Hora,Paciente,DNI,HC,Edad,Sexo,Especialidad,Estado,PA_Sist,PA_Diast,FC,FR,SpO2,Temp,Glucosa,Riesgo,Medico,Diagnostico,Area_Destino,Medicacion,Vacuna\n";
+            let csvContent = "data:text/csv;charset=utf-8,Fecha,Hora,Paciente,Tipo_Doc,DNI,HC,Edad,Sexo,Especialidad,Estado,PA_Sist,PA_Diast,FC,FR,SpO2,Temp,Glucosa,Riesgo,Medico,Diagnostico,Area_Destino,Medicacion,Vacuna\n";
             filteredData.forEach(r => {
                 const q = (v) => `"${v}"`;
-                csvContent += `${r.fecha},${r.hora},${q(r.paciente)},${r.dni},${r.hc},${r.edad},${r.sexo},${r.especialidad || ''},${r.estado},${r.paSist},${r.paDiast},${r.fc},${r.fr},${r.sat},${r.t},${r.glucosa || ''},${r.riesgo},${q(r.medico || '')},${q(r.diagnostico || '')},${q(r.areaDestino || '')},${q(r.medicacion || '')},${q(r.vacuna || '')}\n`;
+                csvContent += `${r.fecha},${r.hora},${q(r.paciente)},${r.tipoDoc || 'DNI'},${r.dni},${r.hc},${r.edad},${r.sexo},${r.especialidad || ''},${r.estado},${r.paSist},${r.paDiast},${r.fc},${r.fr},${r.sat},${r.t},${r.glucosa || ''},${r.riesgo},${q(r.medico || '')},${q(r.diagnostico || '')},${q(r.areaDestino || '')},${q(r.medicacion || '')},${q(r.vacuna || '')}\n`;
             });
             const encodedUri = encodeURI(csvContent);
             const link = document.createElement("a");
@@ -2208,10 +2260,10 @@
                 const isHidden = sidebarNav.classList.contains('hidden');
                 if (isHidden) {
                     sidebarNav.classList.remove('hidden');
-                    sidebarUser.classList.remove('hidden');
+                    if (sidebarUser) sidebarUser.classList.remove('hidden');
                 } else {
                     sidebarNav.classList.add('hidden');
-                    sidebarUser.classList.add('hidden');
+                    if (sidebarUser) sidebarUser.classList.add('hidden');
                 }
             } else {
                 // Comportamiento Colapsar/Expandir en Escritorio
