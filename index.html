@@ -210,6 +210,7 @@
                 <div class="text-right pl-2 border-l border-slate-200">
                     <p class="text-[10px] font-extrabold text-slate-400 uppercase">Fecha Sistema</p>
                     <p id="currentDateHeader" class="text-xs md:text-sm font-extrabold text-slate-800 font-mono">--.--.----</p>
+                    <p id="currentTimeHeader" class="text-[10px] md:text-xs font-bold text-brand-700 font-mono">--:--:--</p>
                 </div>
 
                 <div class="hidden md:flex items-center gap-2.5 pl-3 border-l border-slate-200">
@@ -298,6 +299,35 @@
 
             <!-- ================= VISTA 2: REPORTE DE TRIAJE ================= -->
             <section id="view-reporte" class="view-section max-w-7xl mx-auto space-y-4">
+
+                <!-- KPIs de la vista (responden a los filtros) -->
+                <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+                    <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+                        <p class="text-[9px] font-extrabold text-slate-400 uppercase tracking-wider">📥 Ingresados</p>
+                        <h3 id="kpiRepTotal" class="text-lg font-black text-slate-800 mt-1 truncate">0</h3>
+                        <p id="kpiRepTotalSub" class="text-[9px] text-slate-400 font-bold truncate">registros en filtro</p>
+                    </div>
+                    <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+                        <p class="text-[9px] font-extrabold text-slate-400 uppercase tracking-wider">👥 Etapa frecuente</p>
+                        <h3 id="kpiRepEtapa" class="text-lg font-black text-slate-800 mt-1 truncate">—</h3>
+                        <p id="kpiRepEtapaSub" class="text-[9px] text-slate-400 font-bold truncate">por edad</p>
+                    </div>
+                    <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+                        <p class="text-[9px] font-extrabold text-slate-400 uppercase tracking-wider">🕐 Hora pico</p>
+                        <h3 id="kpiRepHora" class="text-lg font-black text-slate-800 mt-1 truncate">—</h3>
+                        <p id="kpiRepHoraSub" class="text-[9px] text-slate-400 font-bold truncate">de ingresos</p>
+                    </div>
+                    <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+                        <p class="text-[9px] font-extrabold text-slate-400 uppercase tracking-wider">🩺 Dx frecuente</p>
+                        <h3 id="kpiRepPri" class="text-lg font-black text-slate-800 mt-1 truncate">—</h3>
+                        <p id="kpiRepPriSub" class="text-[9px] text-slate-400 font-bold truncate">casos del filtro</p>
+                    </div>
+                    <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+                        <p class="text-[9px] font-extrabold text-slate-400 uppercase tracking-wider">🦠 Vigilancia top</p>
+                        <h3 id="kpiRepVig" class="text-lg font-black text-slate-800 mt-1 truncate">—</h3>
+                        <p id="kpiRepVigSub" class="text-[9px] text-slate-400 font-bold truncate">evento detectado</p>
+                    </div>
+                </div>
                 
                 <div class="bg-white rounded-3xl border border-slate-200 shadow-xl shadow-slate-200/40 overflow-hidden">
                     
@@ -342,8 +372,8 @@
                                 <button onclick="resetFilters()" title="Resetear" class="bg-slate-200 hover:bg-slate-300 text-slate-700 px-3 py-2 rounded-xl text-xs font-extrabold transition-all">
                                     ↺
                                 </button>
-                                <button onclick="exportToCSV()" title="Exportar CSV" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3.5 py-2 rounded-xl text-xs font-extrabold transition-all">
-                                    📥 CSV
+                                <button onclick="exportToExcel()" title="Exportar Excel" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3.5 py-2 rounded-xl text-xs font-extrabold transition-all">
+                                    📥 Excel
                                 </button>
                             </div>
 
@@ -415,17 +445,23 @@
                         </div>
                     </div>
 
-                    <form id="ingresoForm" onsubmit="saveIngresoTriage(event)" class="p-4 sm:p-6 space-y-4">
+                    <form id="ingresoForm" onsubmit="saveIngresoTriage(event)" class="p-4 sm:p-5 space-y-3">
                         <div>
-                            <h4 class="text-xs font-extrabold text-brand-800 uppercase tracking-wider mb-2 flex items-center gap-1.5">
-                                <span>👤</span> 1. Filiación e Identificación del Paciente
-                            </h4>
-                            <div class="grid grid-cols-1 sm:grid-cols-4 gap-3">
-                                <div class="sm:col-span-2">
-                                    <label class="text-[10px] font-bold text-slate-500 uppercase block mb-1">Apellidos y Nombres *</label>
-                                    <input type="text" id="ingPaciente" required placeholder="Ej: PEREZ GARCIA, JUAN" class="filter-input w-full px-3 py-2 text-xs rounded-xl uppercase font-semibold">
+                            <div class="flex items-center justify-between gap-3 mb-2">
+                                <h4 class="text-xs font-extrabold text-brand-800 uppercase tracking-wider flex items-center gap-1.5">
+                                    <span>👤</span> 1. Filiación e Identificación del Paciente
+                                </h4>
+                                <div class="flex items-center gap-2 shrink-0">
+                                    <button type="submit" class="px-4 py-1.5 rounded-xl text-[11px] font-extrabold text-white bg-brand-700 hover:bg-brand-800 shadow-md transition-all uppercase tracking-wider whitespace-nowrap">
+                                        💾 Guardar Ingreso
+                                    </button>
+                                    <button type="button" onclick="limpiarIngreso()" title="Limpiar todos los campos" class="px-4 py-1.5 rounded-xl text-[11px] font-extrabold text-slate-500 hover:bg-slate-100 border border-slate-200 transition-all uppercase tracking-wider whitespace-nowrap">
+                                        🧹 Limpiar
+                                    </button>
                                 </div>
-                                <div>
+                            </div>
+                            <div class="grid grid-cols-1 sm:grid-cols-12 gap-3">
+                                <div class="sm:col-span-2">
                                     <label class="text-[10px] font-bold text-slate-500 uppercase block mb-1">Tipo Doc *</label>
                                     <select id="ingTipoDoc" onchange="ajustarDoc('ing')" class="filter-input w-full px-3 py-2 text-xs rounded-xl font-semibold">
                                         <option value="DNI">DNI</option>
@@ -436,19 +472,30 @@
                                         <option value="Otro">Otro</option>
                                     </select>
                                 </div>
-                                <div>
+                                <div class="sm:col-span-2">
                                     <label class="text-[10px] font-bold text-slate-500 uppercase block mb-1">N° Documento *</label>
-                                    <input type="text" id="ingDni" maxlength="8" required placeholder="8 dígitos" class="filter-input w-full px-3 py-2 text-xs rounded-xl font-mono">
+                                    <input type="text" id="ingDni" maxlength="8" required placeholder="8 dígitos" oninput="intentarReniec('ing')" class="filter-input w-full px-3 py-2 text-xs rounded-xl font-mono">
+                                </div>
+                                <div class="sm:col-span-8">
+                                    <label class="text-[10px] font-bold text-slate-500 uppercase block mb-1">Apellidos y Nombres *</label>
+                                    <input type="text" id="ingPaciente" required placeholder="Ej: PEREZ GARCIA, JUAN" class="filter-input w-full px-3 py-2 text-xs rounded-xl uppercase font-semibold">
                                 </div>
                             </div>
-                            <div class="grid grid-cols-3 gap-3 mt-2.5">
-                                <div>
-                                    <label class="text-[10px] font-bold text-slate-500 uppercase block mb-1">HC (Historia Clínica)</label>
-                                    <input type="text" id="ingHc" placeholder="Ej: HC-009855" class="filter-input w-full px-3 py-2 text-xs rounded-xl font-mono">
-                                </div>
+                            <div class="grid grid-cols-1 sm:grid-cols-4 gap-3 mt-2.5">
                                 <div>
                                     <label class="text-[10px] font-bold text-slate-500 uppercase block mb-1">Edad *</label>
-                                    <input type="text" id="ingEdad" required placeholder="Ej: 42a" class="filter-input w-full px-3 py-2 text-xs rounded-xl">
+                                    <div class="grid grid-cols-2 gap-2">
+                                        <input type="number" min="0" id="ingEdad" required placeholder="Ej: 42" class="filter-input w-full px-3 py-2 text-xs rounded-xl">
+                                        <select id="ingEdadUnidad" class="filter-input w-full px-2 py-2 text-xs rounded-xl font-semibold">
+                                            <option value="a">Años</option>
+                                            <option value="m">Meses</option>
+                                            <option value="d">Días</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="text-[10px] font-bold text-slate-500 uppercase block mb-1">HC (la asigna el servidor)</label>
+                                    <input type="text" id="ingHc" readonly placeholder="Pendiente" class="filter-input w-full px-3 py-2 text-xs rounded-xl font-mono bg-slate-50">
                                 </div>
                                 <div>
                                     <label class="text-[10px] font-bold text-slate-500 uppercase block mb-1">Sexo *</label>
@@ -457,22 +504,22 @@
                                         <option value="F">Femenino (F)</option>
                                     </select>
                                 </div>
-                            </div>
-                            <div class="mt-2.5">
-                                <label class="text-[10px] font-bold text-slate-500 uppercase block mb-1">Especialidad (opcional)</label>
-                                <select id="ingEspecialidad" class="filter-input w-full px-3 py-2 text-xs rounded-xl font-semibold">
-                                    <option value="">Sin definir</option>
-                                    <option>Medicina General</option>
-                                    <option>Cirugía General</option>
-                                    <option>Pediatría</option>
-                                    <option>Ginecología</option>
-                                    <option>Traumatología</option>
-                                    <option>Cardiología</option>
-                                    <option>Neurología</option>
-                                    <option>Otorrinolaringología</option>
-                                    <option>Oftalmología</option>
-                                    <option>Odontología</option>
-                                </select>
+                                <div>
+                                    <label class="text-[10px] font-bold text-slate-500 uppercase block mb-1">Especialidad (opcional)</label>
+                                    <select id="ingEspecialidad" class="filter-input w-full px-3 py-2 text-xs rounded-xl font-semibold">
+                                        <option value="">Sin definir</option>
+                                        <option>Medicina General</option>
+                                        <option>Cirugía General</option>
+                                        <option>Pediatría</option>
+                                        <option>Ginecología</option>
+                                        <option>Traumatología</option>
+                                        <option>Cardiología</option>
+                                        <option>Neurología</option>
+                                        <option>Otorrinolaringología</option>
+                                        <option>Oftalmología</option>
+                                        <option>Odontología</option>
+                                    </select>
+                                </div>
                             </div>
                         </div>
 
@@ -530,10 +577,6 @@
                                             <span class="font-bold text-slate-700 text-[10px] flex items-center gap-1">⚖️ Peso (Kg):</span>
                                             <input type="number" step="0.1" id="ingPeso" placeholder="Kg (e.g. 70)" class="col-span-2 filter-input w-full px-2.5 py-1.5 bg-white rounded-xl font-mono text-xs font-bold text-slate-800">
                                         </div>
-                                        <div class="grid grid-cols-3 items-center gap-2">
-                                            <span class="font-bold text-slate-700 text-[10px] flex items-center gap-1">🩸 Glucosa:</span>
-                                            <input type="number" id="ingGlucosa" placeholder="mg/dL (70-140)" class="col-span-2 filter-input w-full px-2.5 py-1.5 bg-white rounded-xl font-mono text-xs font-bold text-slate-800">
-                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -541,13 +584,7 @@
 
                         <div>
                             <label class="text-[10px] font-bold text-slate-500 uppercase block mb-1">Motivo Principal de Consulta / Síntomas Agudos *</label>
-                            <textarea id="ingMotivo" rows="2" required placeholder="Describa malestar principal, dolor, evolución de síntomas..." class="filter-input w-full p-2.5 text-xs rounded-xl"></textarea>
-                        </div>
-
-                        <div class="flex items-center justify-end gap-3 pt-3 border-t border-slate-100">
-                            <button type="submit" class="px-5 py-2 rounded-xl text-xs font-extrabold text-white bg-brand-700 hover:bg-brand-800 shadow-md transition-all uppercase tracking-wider">
-                                Guardar & Categorizar Paciente
-                            </button>
+                            <textarea id="ingMotivo" rows="1" required placeholder="Describa malestar principal, dolor, evolución de síntomas..." class="filter-input w-full p-2.5 text-xs rounded-xl"></textarea>
                         </div>
                     </form>
                 </div>
@@ -679,12 +716,8 @@
                     <h4 class="text-xs font-extrabold text-brand-800 uppercase tracking-wider mb-2 flex items-center gap-1.5">
                         <span>👤</span> 1. Filiación e Identificación del Paciente
                     </h4>
-                    <div class="grid grid-cols-1 sm:grid-cols-4 gap-3">
+                    <div class="grid grid-cols-1 sm:grid-cols-12 gap-3">
                         <div class="sm:col-span-2">
-                            <label class="text-[10px] font-bold text-slate-500 uppercase block mb-1">Apellidos y Nombres *</label>
-                            <input type="text" id="formPaciente" required placeholder="Ej: PEREZ GARCIA, JUAN" class="filter-input w-full px-3 py-2 text-xs rounded-xl uppercase font-semibold">
-                        </div>
-                        <div>
                             <label class="text-[10px] font-bold text-slate-500 uppercase block mb-1">Tipo Doc *</label>
                             <select id="formTipoDoc" onchange="ajustarDoc('form')" class="filter-input w-full px-3 py-2 text-xs rounded-xl font-semibold">
                                 <option value="DNI">DNI</option>
@@ -695,19 +728,30 @@
                                 <option value="Otro">Otro</option>
                             </select>
                         </div>
-                        <div>
+                        <div class="sm:col-span-2">
                             <label class="text-[10px] font-bold text-slate-500 uppercase block mb-1">N° Documento *</label>
-                            <input type="text" id="formDni" maxlength="8" required placeholder="8 dígitos" class="filter-input w-full px-3 py-2 text-xs rounded-xl font-mono">
+                            <input type="text" id="formDni" maxlength="8" required placeholder="8 dígitos" oninput="intentarReniec('form')" class="filter-input w-full px-3 py-2 text-xs rounded-xl font-mono">
+                        </div>
+                        <div class="sm:col-span-8">
+                            <label class="text-[10px] font-bold text-slate-500 uppercase block mb-1">Apellidos y Nombres *</label>
+                            <input type="text" id="formPaciente" required placeholder="Ej: PEREZ GARCIA, JUAN" class="filter-input w-full px-3 py-2 text-xs rounded-xl uppercase font-semibold">
                         </div>
                     </div>
-                    <div class="grid grid-cols-3 gap-3 mt-2.5">
-                        <div>
-                            <label class="text-[10px] font-bold text-slate-500 uppercase block mb-1">HC (Historia Clínica)</label>
-                            <input type="text" id="formHc" placeholder="Ej: HC-009855" class="filter-input w-full px-3 py-2 text-xs rounded-xl font-mono">
-                        </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-4 gap-3 mt-2.5">
                         <div>
                             <label class="text-[10px] font-bold text-slate-500 uppercase block mb-1">Edad *</label>
-                            <input type="text" id="formEdad" required placeholder="Ej: 42a" class="filter-input w-full px-3 py-2 text-xs rounded-xl">
+                            <div class="grid grid-cols-2 gap-2">
+                                <input type="number" min="0" id="formEdad" required placeholder="Ej: 42" class="filter-input w-full px-3 py-2 text-xs rounded-xl">
+                                <select id="formEdadUnidad" class="filter-input w-full px-2 py-2 text-xs rounded-xl font-semibold">
+                                    <option value="a">Años</option>
+                                    <option value="m">Meses</option>
+                                    <option value="d">Días</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="text-[10px] font-bold text-slate-500 uppercase block mb-1">HC (la asigna el servidor)</label>
+                            <input type="text" id="formHc" readonly placeholder="Pendiente" class="filter-input w-full px-3 py-2 text-xs rounded-xl font-mono bg-slate-50">
                         </div>
                         <div>
                             <label class="text-[10px] font-bold text-slate-500 uppercase block mb-1">Sexo *</label>
@@ -716,22 +760,22 @@
                                 <option value="F">Femenino (F)</option>
                             </select>
                         </div>
-                    </div>
-                    <div class="mt-2.5">
-                        <label class="text-[10px] font-bold text-slate-500 uppercase block mb-1">Especialidad (opcional)</label>
-                        <select id="formEspecialidad" class="filter-input w-full px-3 py-2 text-xs rounded-xl font-semibold">
-                            <option value="">Sin definir</option>
-                            <option>Medicina General</option>
-                            <option>Cirugía General</option>
-                            <option>Pediatría</option>
-                            <option>Ginecología</option>
-                            <option>Traumatología</option>
-                            <option>Cardiología</option>
-                            <option>Neurología</option>
-                            <option>Otorrinolaringología</option>
-                            <option>Oftalmología</option>
-                            <option>Odontología</option>
-                        </select>
+                        <div>
+                            <label class="text-[10px] font-bold text-slate-500 uppercase block mb-1">Especialidad (opcional)</label>
+                            <select id="formEspecialidad" class="filter-input w-full px-3 py-2 text-xs rounded-xl font-semibold">
+                                <option value="">Sin definir</option>
+                                <option>Medicina General</option>
+                                <option>Cirugía General</option>
+                                <option>Pediatría</option>
+                                <option>Ginecología</option>
+                                <option>Traumatología</option>
+                                <option>Cardiología</option>
+                                <option>Neurología</option>
+                                <option>Otorrinolaringología</option>
+                                <option>Oftalmología</option>
+                                <option>Odontología</option>
+                            </select>
+                        </div>
                     </div>
                 </div>
 
@@ -807,12 +851,6 @@
                                 <div class="grid grid-cols-3 items-center gap-2">
                                     <span class="font-bold text-slate-700 text-[10px] flex items-center gap-1">⚖️ Peso (Kg):</span>
                                     <input type="number" step="0.1" id="formPeso" placeholder="Kg (e.g. 70)" class="col-span-2 filter-input w-full px-2.5 py-1.5 bg-white rounded-xl font-mono text-xs font-bold text-slate-800">
-                                </div>
-
-                                <!-- Glucosa -->
-                                <div class="grid grid-cols-3 items-center gap-2">
-                                    <span class="font-bold text-slate-700 text-[10px] flex items-center gap-1">🩸 Glucosa:</span>
-                                    <input type="number" id="formGlucosa" placeholder="mg/dL (70-140)" class="col-span-2 filter-input w-full px-2.5 py-1.5 bg-white rounded-xl font-mono text-xs font-bold text-slate-800">
                                 </div>
                             </div>
                         </div>
@@ -1011,6 +1049,11 @@
                         <p id="drawerMotivo" class="text-xs text-slate-700 bg-slate-50 p-3 rounded-xl border border-slate-200/80 italic leading-relaxed">No especificado</p>
                     </div>
 
+                    <div id="drawerVigilanciaWrap" class="hidden">
+                        <h4 class="text-[10px] font-extrabold text-purple-600 uppercase tracking-wider mb-1">🦠 Vigilancia Epidemiológica</h4>
+                        <p id="drawerVigilancia" class="text-xs font-extrabold text-purple-700 bg-purple-50 p-3 rounded-xl border border-purple-200 leading-relaxed">—</p>
+                    </div>
+
                 </div>
             </div>
 
@@ -1050,8 +1093,18 @@
             { id: 15, hc: 'HC-000411', fecha: '2026-08-04', hora: '17:25', paciente: 'REYES SALAZAR, GABRIEL OMAR', dni: '71998811', edad: '26a', sexo: 'M', paSist: 130, paDiast: 85, fc: 98, fr: 20, sat: 97, t: 38.3, talla: 176, peso: 79, glucosa: 112, riesgo: 'moderado', motivo: 'Odinofragia intensa con placas purulentas y fiebre.' }
         ];
 
+        function evaluarVigilancia(t, fr, sat, motivo) {
+            const tags = [];
+            const m = String(motivo || '').toLowerCase();
+            if (parseFloat(t) >= 38) tags.push('FEBRIL');
+            if (/sibilan|silbid|asma|tiraje|estridor|espasmo|obstruct/.test(m)) tags.push('SOBA');
+            if (Number(fr) > 20 || Number(sat) < 95 || /tos|disnea|dificultad respir|respir|ahogo|neumon|gripe|resfri|faring|amigdal|bronqui|pulmon|rinofaring/.test(m)) tags.push('IRA');
+            if (/diarrea|deposici|disenteri|heces|vomito|vómito|deshidrat/.test(m)) tags.push('EDA');
+            return tags.length ? tags.join(' + ') : '—';
+        }
+
         function normalizeRecord(r) {
-            return Object.assign({}, {
+            const rec = Object.assign({}, {
                 estado: 'en_espera',
                 tipoDoc: 'DNI',
                 especialidad: '',
@@ -1063,6 +1116,8 @@
                 horaInicio: null,
                 horaFin: null
             }, r);
+            rec.dxVigilancia = evaluarVigilancia(rec.t, rec.fr, rec.sat, rec.motivo);
+            return rec;
         }
 
         function persistData() {
@@ -1071,7 +1126,17 @@
         }
 
         function todayStr() {
-            return new Date().toISOString().split('T')[0];
+            return localDateStr();
+        }
+
+        function localDateStr() {
+            const d = new Date();
+            return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+        }
+
+        function updateClock() {
+            const el = document.getElementById('currentTimeHeader');
+            if (el) el.innerText = new Date().toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
         }
 
         function minToHhmm(totalMin) {
@@ -1286,6 +1351,7 @@
         function estadoInfo(estado) {
             if (estado === 'en_atencion') return { text: 'En Atención', cls: 'bg-blue-50 text-blue-700 border-blue-200' };
             if (estado === 'atendido') return { text: 'Atendido', cls: 'bg-emerald-50 text-emerald-700 border-emerald-200' };
+            if (estado === 'retirado') return { text: 'Retirado', cls: 'bg-slate-100 text-slate-500 border-slate-300' };
             return { text: 'En Espera', cls: 'bg-amber-50 text-amber-700 border-amber-200' };
         }
 
@@ -1524,6 +1590,7 @@
                                 </div>
                                 <div class="flex flex-wrap items-center gap-1">
                                     ${alertsHtml}
+                                    ${(row.dxVigilancia && row.dxVigilancia !== '—') ? `<span class="text-[9px] px-2 py-0.5 rounded-full border bg-purple-50 text-purple-700 border-purple-200 font-extrabold">🦠 ${row.dxVigilancia}</span>` : ''}
                                     <span class="text-[9px] text-slate-500 italic truncate max-w-[200px]" title="${row.motivo}">"${row.motivo}"</span>
                                 </div>
                             </div>
@@ -1539,9 +1606,13 @@
                                     👁️
                                 </button>
                                 ${row.estado === 'en_espera'
-                                    ? `<button onclick="startAttention(${row.id})" title="Iniciar atención" class="bg-blue-600 hover:bg-blue-700 text-white px-2.5 py-1 rounded-lg font-bold text-xs transition-all shadow-sm">▶ Iniciar</button>`
+                                    ? `<button onclick="startAttention(${row.id})" title="Iniciar atención" class="bg-blue-600 hover:bg-blue-700 text-white px-2.5 py-1 rounded-lg font-bold text-xs transition-all shadow-sm">▶ Iniciar</button>
+                                       <button onclick="retirarPatient(${row.id})" title="Paciente se retiró sin atención" class="bg-slate-100 hover:bg-slate-200 text-slate-500 px-2 py-1 rounded-lg font-bold text-xs transition-all border border-slate-200">🚪</button>`
                                     : row.estado === 'en_atencion'
-                                    ? `<button onclick="openCompleteAttentionModal(${row.id})" title="Cerrar atención" class="bg-emerald-600 hover:bg-emerald-700 text-white px-2.5 py-1 rounded-lg font-bold text-xs transition-all shadow-sm">✔ Cerrar</button>`
+                                    ? `<button onclick="openCompleteAttentionModal(${row.id})" title="Cerrar atención" class="bg-emerald-600 hover:bg-emerald-700 text-white px-2.5 py-1 rounded-lg font-bold text-xs transition-all shadow-sm">✔ Cerrar</button>
+                                       <button onclick="retirarPatient(${row.id})" title="Paciente se retiró sin atención" class="bg-slate-100 hover:bg-slate-200 text-slate-500 px-2 py-1 rounded-lg font-bold text-xs transition-all border border-slate-200">🚪</button>`
+                                    : row.estado === 'retirado'
+                                    ? `<button onclick="reingresarPatient(${row.id})" title="Reingresar a la cola de espera" class="bg-amber-500 hover:bg-amber-600 text-white px-2.5 py-1 rounded-lg font-bold text-xs transition-all shadow-sm">↩ Reingresar</button>`
                                     : `<button onclick="reopenAttention(${row.id})" title="Reabrir atención" class="bg-slate-100 hover:bg-slate-200 text-slate-500 px-2 py-1 rounded-lg font-bold text-xs transition-all border border-slate-200">↺</button>`}
                             </div>
                         </td>
@@ -1551,6 +1622,58 @@
 
             // Renderizar Botones de Paginación
             renderPaginationControls(totalPages);
+            refreshReporteKpis();
+        }
+
+        function grupoEnfermedad(motivo, diagnostico) {
+            const m = `${diagnostico || ''} ${motivo || ''}`.toLowerCase();
+            if (/diarrea|deposici|disenteri|vómito|vomito|gastr|abdomin|náusea|nausea|deshidrat|hepati|apendic/.test(m)) return 'Digestivo';
+            if (/tos|sibilan|silbid|disnea|respir|bronco|asma|neumon|gripe|resfri|faring|amigdal|pulmon|rinofaring|tuberculosis|tiraje/.test(m)) return 'Respiratorio';
+            if (/fiebre|febril|tifoidea|dengue|malaria/.test(m)) return 'Febril';
+            if (/dolor pecho|precordial|infarto|hiperten|hta|presi[oó]n|taquicardia|arritmia|cardia/.test(m)) return 'Cardiovascular';
+            if (/trauma|fractura|esguince|herida|luxaci|contusi|accidente|quemad|politrauma|corte|sutura/.test(m)) return 'Trauma';
+            if (/cefalea|convulsi|mareo|desmayo|acv|ictus|epilepsia|migraña|neurol/.test(m)) return 'Neurológico';
+            if (/urinari|riñón|rinon|cistitis|disuria|prostata/.test(m)) return 'Urinario';
+            if (/piel|dermat|alergia|rash|cutáne|cutaneo|urticaria/.test(m)) return 'Dermatológico';
+            if (/diabet|glucosa|hiperglic/.test(m)) return 'Metabólico';
+            if (/embarazo|parto|gestan|ginec|aborto/.test(m)) return 'Gineco-obstétrico';
+            return 'Otro / General';
+        }
+
+        function modeCount(list) {            const freq = {};
+            list.forEach(v => { if (v && v !== '—') freq[v] = (freq[v] || 0) + 1; });
+            let best = null, bestN = 0;
+            Object.keys(freq).forEach(k => { if (freq[k] > bestN) { best = k; bestN = freq[k]; } });
+            return { value: best, count: bestN };
+        }
+
+        function refreshReporteKpis() {
+            const set = (id, val) => { const el = document.getElementById(id); if (el) el.innerText = val; };
+            const n = filteredData.length;
+            set('kpiRepTotal', n);
+            set('kpiRepTotalSub', n === 1 ? '1 registro en filtro' : `${n} registros en filtro`);
+            if (!n) {
+                set('kpiRepEtapa', '—'); set('kpiRepEtapaSub', 'sin datos');
+                set('kpiRepHora', '—'); set('kpiRepHoraSub', 'sin datos');
+                set('kpiRepPri', '—'); set('kpiRepPriSub', 'sin datos');
+                set('kpiRepVig', '—'); set('kpiRepVigSub', 'sin datos');
+                return;
+            }
+            const etapa = modeCount(filteredData.map(r => etapaVida(r.edad)));
+            const etapaCorta = etapa.value ? etapa.value.replace(/\s*\(.*\)/, '') : null;
+            set('kpiRepEtapa', etapaCorta || '—');
+            set('kpiRepEtapaSub', etapa.value ? `${etapa.value} · ${etapa.count} de ${n}` : 'sin datos');
+            const hora = modeCount(filteredData.map(r => String(r.hora || '').slice(0, 2)).filter(h => h));
+            set('kpiRepHora', hora.value ? `${hora.value}:00` : '—');
+            set('kpiRepHoraSub', hora.value ? `${hora.count} ingresos` : 'sin datos');
+            const dx = modeCount(filteredData.map(r => grupoEnfermedad(r.motivo, r.diagnostico)));
+            set('kpiRepPri', dx.value || '—');
+            set('kpiRepPriSub', dx.value ? `${dx.count} casos` : 'sin datos');
+            const vigTags = [];
+            filteredData.forEach(r => String(r.dxVigilancia || '—').split(' + ').forEach(t => { if (t && t !== '—') vigTags.push(t); }));
+            const vig = modeCount(vigTags);
+            set('kpiRepVig', vig.value || 'Sin eventos');
+            set('kpiRepVigSub', vig.value ? `${vig.count} detectados` : 'en este filtro');
         }
 
         function renderPaginationControls(totalPages) {
@@ -1653,12 +1776,15 @@
         }
 
         function readTriageInputs(prefix) {
+            const glucEl = document.getElementById(prefix + 'Glucosa');
+            const edadNum = document.getElementById(prefix + 'Edad').value;
+            const edadUniEl = document.getElementById(prefix + 'EdadUnidad');
             return {
                 paciente: document.getElementById(prefix + 'Paciente').value,
                 tipoDoc: document.getElementById(prefix + 'TipoDoc').value,
                 dni: document.getElementById(prefix + 'Dni').value,
-                hc: document.getElementById(prefix + 'Hc').value || `HC-00${Math.floor(1000 + Math.random() * 9000)}`,
-                edad: document.getElementById(prefix + 'Edad').value,
+                hc: document.getElementById(prefix + 'Hc').value || '',
+                edad: edadNum ? `${edadNum}${edadUniEl ? edadUniEl.value : 'a'}` : '',
                 sexo: document.getElementById(prefix + 'Sexo').value,
                 especialidad: document.getElementById(prefix + 'Especialidad').value,
                 paSist: parseInt(document.getElementById(prefix + 'PaSist').value),
@@ -1669,7 +1795,7 @@
                 t: parseFloat(document.getElementById(prefix + 'T').value),
                 talla: parseInt(document.getElementById(prefix + 'Talla').value) || 0,
                 peso: parseFloat(document.getElementById(prefix + 'Peso').value) || 0,
-                glucosa: parseInt(document.getElementById(prefix + 'Glucosa').value) || 0,
+                glucosa: glucEl ? (parseInt(glucEl.value) || 0) : 0,
                 motivo: document.getElementById(prefix + 'Motivo').value || 'Atención en Urgencias'
             };
         }
@@ -1680,7 +1806,7 @@
             const newRecord = {
                 id: Date.now(),
                 hc: v.hc,
-                fecha: new Date().toISOString().split('T')[0],
+                fecha: localDateStr(),
                 hora: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
                 paciente: v.paciente,
                 tipoDoc: v.tipoDoc || 'DNI',
@@ -1699,6 +1825,7 @@
                 glucosa: v.glucosa,
                 riesgo: autoRiesgo,
                 motivo: v.motivo,
+                dxVigilancia: evaluarVigilancia(v.t, v.fr, v.sat, v.motivo),
                 estado: 'en_espera',
                 areaDestino: '',
                 diagnostico: '',
@@ -1719,6 +1846,9 @@
 
         function triageToast(rec) {
             triggerToast(`Paciente ${rec.paciente} clasificado: ${rec.riesgo.toUpperCase()}`, rec.riesgo === 'critico' ? 'danger' : 'success');
+            if (rec.dxVigilancia && rec.dxVigilancia !== '—') {
+                setTimeout(() => triggerToast(`VIGILANCIA EPIDEMIOLÓGICA: ${rec.dxVigilancia} — notificar a epidemiología`, 'danger'), 700);
+            }
         }
 
         function ajustarDoc(prefix) {
@@ -1743,6 +1873,74 @@
             return null;
         }
 
+        // --- [AUTOCOMPLETADO] Nivel 1: base local · Nivel 2: RENIEC (el inge conecta la API real vía PIDE) ---
+        const RENIEC_CONFIG = { baseUrl: '', timeoutMs: 4000 };
+        const reniecIntentado = {};
+
+        function buscarPacienteLocal(num) {
+            const n = String(num || '').trim();
+            if (!n) return null;
+            return RAW_DATA.find(r => String(r.dni) === n) || null;
+        }
+
+        function aplicarDatosFiliacion(prefix, datos) {
+            if (!datos) return;
+            const set = (id, val) => { const el = document.getElementById(prefix + id); if (el && val) el.value = val; };
+            set('Paciente', datos.nombres || datos.apellidosNombres || datos.paciente || '');
+            set('Hc', datos.hc || '');
+            const m = String(datos.edad || '').match(/(\d+)\s*([a-zñ]*)/i);
+            if (m) {
+                set('Edad', m[1]);
+                const uniEl = document.getElementById(prefix + 'EdadUnidad');
+                if (uniEl) {
+                    const s = (m[2] || 'a').toLowerCase();
+                    uniEl.value = s.startsWith('m') ? 'm' : (s.startsWith('d') ? 'd' : 'a');
+                }
+            }
+            const sexoEl = document.getElementById(prefix + 'Sexo');
+            if (sexoEl && datos.sexo) {
+                const s = String(datos.sexo).toUpperCase();
+                sexoEl.value = (s.startsWith('F') || s === 'FEMENINO') ? 'F' : 'M';
+            }
+        }
+
+        async function intentarReniec(prefix) {
+            const tipoEl = document.getElementById(prefix + 'TipoDoc');
+            const numEl = document.getElementById(prefix + 'Dni');
+            if (!tipoEl || !numEl) return;
+            const tipo = tipoEl.value;
+            const num = numEl.value.trim();
+            if (num.length < 4 || reniecIntentado[prefix] === `${tipo}:${num}`) return;
+
+            const local = buscarPacienteLocal(num);
+            if (local) {
+                reniecIntentado[prefix] = `${tipo}:${num}`;
+                aplicarDatosFiliacion(prefix, local);
+                triggerToast(`Paciente encontrado: ${local.paciente} — datos autocompletados`, 'success');
+                return;
+            }
+
+            if (tipo !== 'DNI' || !/^\d{8}$/.test(num)) return;
+            reniecIntentado[prefix] = `${tipo}:${num}`;
+            if (!RENIEC_CONFIG.baseUrl) {
+                triggerToast('Paciente nuevo — complete nombres, edad y sexo manualmente', 'info');
+                return;
+            }
+            try {
+                const ctrl = new AbortController();
+                const timer = setTimeout(() => ctrl.abort(), RENIEC_CONFIG.timeoutMs);
+                const res = await fetch(`${RENIEC_CONFIG.baseUrl}/dni/${num}`, { signal: ctrl.signal });
+                clearTimeout(timer);
+                if (!res.ok) throw new Error('sin respuesta');
+                aplicarDatosFiliacion(prefix, await res.json());
+                triggerToast('Datos RENIEC aplicados — verifique antes de guardar', 'success');
+            } catch (err) {
+                triggerToast('No se pudo consultar RENIEC — complete manualmente', 'danger');
+            }
+        }
+
+        // --- [HC] La HC la asigna el servidor / base de datos al integrarse (sin número local) ---
+
         function saveNewTriage(e) {
             e.preventDefault();
             const v = readTriageInputs('form');
@@ -1753,8 +1951,13 @@
             triageToast(rec);
         }
 
-        function saveIngresoTriage(e) {
-            e.preventDefault();
+        function limpiarIngreso() {
+            const form = document.getElementById('ingresoForm');
+            if (form) form.reset();
+            triggerToast('Formulario limpio — listo para el siguiente paciente', 'info');
+        }
+
+        function saveIngresoTriage(e) {            e.preventDefault();
             const v = readTriageInputs('ing');
             const err = validarDoc(v);
             if (err) { triggerToast(err, 'danger'); return; }
@@ -1787,6 +1990,13 @@
             document.getElementById('drawerImc').innerText = imc ? `IMC: ${imc} Kg/m²` : 'IMC: N/A';
 
             document.getElementById('drawerMotivo').innerText = patient.motivo;
+            const vigWrap = document.getElementById('drawerVigilanciaWrap');
+            const vigEl = document.getElementById('drawerVigilancia');
+            if (vigWrap && vigEl) {
+                const vig = patient.dxVigilancia || '—';
+                vigEl.innerText = vig === '—' ? 'Sin evento de vigilancia' : `${vig} — notificar a epidemiología`;
+                vigWrap.classList.toggle('hidden', vig === '—');
+            }
 
             const est = estadoInfo(patient.estado);
             document.getElementById('drawerEstado').innerText = `${est.text}`;
@@ -1830,20 +2040,46 @@
             triggerToast(`Imprimiendo Ticket Triaje para HC: ${currentSelectedPatient.hc}`, 'success');
         }
 
-        function exportToCSV() {
-            let csvContent = "data:text/csv;charset=utf-8,Fecha,Hora,Paciente,Tipo_Doc,DNI,HC,Edad,Sexo,Especialidad,Estado,PA_Sist,PA_Diast,FC,FR,SpO2,Temp,Glucosa,Riesgo,Medico,Diagnostico,Area_Destino,Medicacion,Vacuna\n";
+        function vigFlag(dx, tag) {
+            return String(dx || '—').split(' + ').includes(tag) ? 'SÍ' : '';
+        }
+
+        function etapaVida(edadStr) {
+            const m = String(edadStr || '').trim().match(/(\d+)\s*([a-zñ]*)/i);
+            if (!m) return '—';
+            let anos = parseInt(m[1], 10);
+            const suf = (m[2] || 'a').toLowerCase();
+            if (suf.startsWith('m')) anos = anos / 12;
+            else if (suf.startsWith('d')) anos = anos / 365;
+            if (anos < 12) return 'Niño (0-11)';
+            if (anos < 18) return 'Adolescente (12-17)';
+            if (anos < 30) return 'Joven (18-29)';
+            if (anos < 60) return 'Adulto (30-59)';
+            return 'Adulto mayor (60+)';
+        }
+
+        function exportToExcel() {
+            const headers = ['Fecha', 'Hora', 'Paciente', 'Tipo_Doc', 'DNI', 'HC', 'Edad', 'Sexo', 'Especialidad', 'Estado', 'PA_Sist', 'PA_Diast', 'FC', 'FR', 'SpO2', 'Temp', 'Glucosa', 'Riesgo', 'Etapa_Vida', 'Vig_EDA', 'Vig_IRA', 'Vig_SOBA', 'Vig_Febril', 'Medico', 'Diagnostico', 'Area_Destino', 'Medicacion', 'Vacuna'];
+            const esc = (v) => String(v ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+            let xml = '<?xml version="1.0" encoding="UTF-8"?>';
+            xml += '<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">';
+            xml += '<Styles><Style ss:ID="hdr"><Font ss:Bold="1" ss:Color="#FFFFFF"/><Interior ss:Color="#1D4ED8" ss:Pattern="Solid"/></Style></Styles>';
+            xml += '<Worksheet ss:Name="Reporte Triaje"><Table>';
+            xml += '<Row>' + headers.map(h => `<Cell ss:StyleID="hdr"><Data ss:Type="String">${h}</Data></Cell>`).join('') + '</Row>';
             filteredData.forEach(r => {
-                const q = (v) => `"${v}"`;
-                csvContent += `${r.fecha},${r.hora},${q(r.paciente)},${r.tipoDoc || 'DNI'},${r.dni},${r.hc},${r.edad},${r.sexo},${r.especialidad || ''},${r.estado},${r.paSist},${r.paDiast},${r.fc},${r.fr},${r.sat},${r.t},${r.glucosa || ''},${r.riesgo},${q(r.medico || '')},${q(r.diagnostico || '')},${q(r.areaDestino || '')},${q(r.medicacion || '')},${q(r.vacuna || '')}\n`;
+                const vals = [r.fecha, r.hora, r.paciente, r.tipoDoc || 'DNI', r.dni, r.hc, r.edad, r.sexo, r.especialidad || '', r.estado, r.paSist, r.paDiast, r.fc, r.fr, r.sat, r.t, r.glucosa || '', r.riesgo, etapaVida(r.edad), vigFlag(r.dxVigilancia, 'EDA'), vigFlag(r.dxVigilancia, 'IRA'), vigFlag(r.dxVigilancia, 'SOBA'), vigFlag(r.dxVigilancia, 'FEBRIL'), r.medico || '', r.diagnostico || '', r.areaDestino || '', r.medicacion || '', r.vacuna || ''];
+                xml += '<Row>' + vals.map(v => `<Cell><Data ss:Type="String">${esc(v)}</Data></Cell>`).join('') + '</Row>';
             });
-            const encodedUri = encodeURI(csvContent);
-            const link = document.createElement("a");
-            link.setAttribute("href", encodedUri);
-            link.setAttribute("download", `Triaje_SGH_${new Date().toISOString().split('T')[0]}.csv`);
+            xml += '</Table></Worksheet></Workbook>';
+            const blob = new Blob(['\ufeff' + xml], { type: 'application/vnd.ms-excel' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = `Reporte_Triaje_${localDateStr()}.xls`;
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
-            triggerToast('Reporte CSV generado exitosamente', 'success');
+            setTimeout(() => URL.revokeObjectURL(link.href), 1000);
+            triggerToast(`Excel generado con ${filteredData.length} registros`, 'success');
         }
 
         function switchView(view) {
@@ -1985,8 +2221,10 @@
             }, 5000);
             const dateHeader = document.getElementById('currentDateHeader');
             if (dateHeader) {
-                dateHeader.innerText = formatDate(new Date().toISOString().split('T')[0]);
+                dateHeader.innerText = formatDate(localDateStr());
             }
+            updateClock();
+            setInterval(updateClock, 1000);
             bootstrapApi();
         };
 
@@ -2059,6 +2297,33 @@
             triggerToast(`Atención reabierta de ${p.paciente}`, 'info');
         }
 
+        function retirarPatient(id) {
+            const p = RAW_DATA.find(x => x.id === id);
+            if (!p || (p.estado !== 'en_espera' && p.estado !== 'en_atencion')) return;
+            p.estado = 'retirado';
+            p.horaFin = nowTime();
+            persistData();
+            pushRecord(p, false);
+            executeFilter();
+            renderQueue();
+            updateStats();
+            triggerToast(`Paciente ${p.paciente} marcado como RETIRADO (se retiró sin atención)`, 'info');
+        }
+
+        function reingresarPatient(id) {
+            const p = RAW_DATA.find(x => x.id === id);
+            if (!p || p.estado !== 'retirado') return;
+            p.estado = 'en_espera';
+            p.horaInicio = null;
+            p.horaFin = null;
+            persistData();
+            pushRecord(p, false);
+            executeFilter();
+            renderQueue();
+            updateStats();
+            triggerToast(`Paciente ${p.paciente} reingresado a la cola de espera`, 'success');
+        }
+
         // ============ COLA DE ESPERA ============
         function renderQueue() {
             const waitingEl = document.getElementById('queueWaitingList');
@@ -2071,7 +2336,7 @@
                 .sort((a, b) => priorityOrder(a) - priorityOrder(b) || admissionTime(a) - admissionTime(b));
             const active = RAW_DATA.filter(r => r.estado === 'en_atencion')
                 .sort((a, b) => admissionTime(a) - admissionTime(b));
-            const done = RAW_DATA.filter(r => r.estado === 'atendido')
+            const done = RAW_DATA.filter(r => r.estado === 'atendido' || r.estado === 'retirado')
                 .sort((a, b) => b.fecha.localeCompare(a.fecha) || b.hora.localeCompare(a.hora));
 
             waitingEl.innerHTML = waiting.length
@@ -2111,8 +2376,10 @@
                 : warn ? 'bg-red-50 text-red-700 border-red-200' : 'bg-slate-50 text-slate-600 border-slate-200'}">⏱ ${formatDurationClock(elapsed)}${warn && mode === 'waiting' ? ' ⚠' : ''}</span>`;
 
             const action = mode === 'waiting'
-                ? `<button onclick="startAttention(${r.id})" class="bg-blue-600 hover:bg-blue-700 text-white px-2.5 py-1.5 rounded-xl font-extrabold text-xs transition-all shadow-sm shrink-0">▶ Iniciar</button>`
-                : `<button onclick="openCompleteAttentionModal(${r.id})" class="bg-emerald-600 hover:bg-emerald-700 text-white px-2.5 py-1.5 rounded-xl font-extrabold text-xs transition-all shadow-sm shrink-0">✔ Cerrar</button>`;
+                ? `<button onclick="startAttention(${r.id})" class="bg-blue-600 hover:bg-blue-700 text-white px-2.5 py-1.5 rounded-xl font-extrabold text-xs transition-all shadow-sm shrink-0">▶ Iniciar</button>
+                   <button onclick="retirarPatient(${r.id})" title="Paciente se retiró" class="bg-slate-100 hover:bg-slate-200 text-slate-500 border border-slate-200 px-2 py-1.5 rounded-xl font-extrabold text-xs transition-all shrink-0">🚪</button>`
+                : `<button onclick="openCompleteAttentionModal(${r.id})" class="bg-emerald-600 hover:bg-emerald-700 text-white px-2.5 py-1.5 rounded-xl font-extrabold text-xs transition-all shadow-sm shrink-0">✔ Cerrar</button>
+                   <button onclick="retirarPatient(${r.id})" title="Paciente se retiró" class="bg-slate-100 hover:bg-slate-200 text-slate-500 border border-slate-200 px-2 py-1.5 rounded-xl font-extrabold text-xs transition-all shrink-0">🚪</button>`;
 
             return `
                 <div class="flex items-center justify-between gap-3 p-3 rounded-2xl border bg-white ${pb.card}">
@@ -2133,17 +2400,21 @@
 
         function doneCard(r) {
             const pb = priorityBadge(r);
+            const retirado = r.estado === 'retirado';
             return `
                 <div class="flex items-center justify-between gap-3 p-3 rounded-2xl border border-slate-200 bg-slate-50/60">
                     <div class="flex items-center gap-2.5 min-w-0">
-                        <span class="w-2 h-2 rounded-full bg-emerald-500 shrink-0"></span>
+                        <span class="w-2 h-2 rounded-full ${retirado ? 'bg-slate-400' : 'bg-emerald-500'} shrink-0"></span>
                         <div class="min-w-0">
                             <p class="font-extrabold text-slate-800 text-xs uppercase truncate">${r.paciente}</p>
-                            <p class="text-[9px] text-slate-500 font-bold truncate">${formatDate(r.fecha)} · ${r.hora} · ${r.diagnostico || 'Sin diagnóstico'}</p>
+                            <p class="text-[9px] text-slate-500 font-bold truncate">${formatDate(r.fecha)} · ${r.hora} · ${retirado ? 'Se retiró sin atención' : (r.diagnostico || 'Sin diagnóstico')}</p>
                         </div>
                     </div>
                     <div class="flex items-center gap-2 shrink-0">
-                        ${r.areaDestino ? `<span class="text-[8px] px-2 py-0.5 rounded-full border border-indigo-200 bg-indigo-50 text-indigo-700 font-extrabold">→ ${r.areaDestino}</span>` : ''}
+                        ${retirado
+                            ? `<span class="text-[8px] px-2 py-0.5 rounded-full border border-slate-300 bg-slate-100 text-slate-500 font-extrabold">RETIRADO</span>
+                               <button onclick="reingresarPatient(${r.id})" title="Reingresar a la cola" class="bg-amber-500 hover:bg-amber-600 text-white px-2 py-1 rounded-lg font-bold text-xs transition-all">↩</button>`
+                            : `${r.areaDestino ? `<span class="text-[8px] px-2 py-0.5 rounded-full border border-indigo-200 bg-indigo-50 text-indigo-700 font-extrabold">→ ${r.areaDestino}</span>` : ''}`}
                         <button onclick="openPatientDrawer(${r.id})" class="bg-white hover:bg-brand-50 text-slate-600 hover:text-brand-700 border border-slate-200 px-2 py-1 rounded-lg font-bold text-xs transition-all">👁️</button>
                     </div>
                 </div>`;
