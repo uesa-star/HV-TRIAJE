@@ -1419,6 +1419,16 @@
             return 'estable';
         }
 
+        // --- [BLINDAJE] Escape anti-XSS + protección de datos clínicos ---
+        function escHtml(v) {
+            return String(v ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+        }
+
+        console.warn('%cALTO — Módulo con datos sensibles de pacientes', 'color:red;font-size:16px;font-weight:bold;', '\nNo pegues ni ejecutes código en esta consola. El uso indebido de datos de salud está sancionado (Ley 29733).');
+        document.addEventListener('contextmenu', (e) => {
+            if (e.target.closest && e.target.closest('table, #queueWaitingList, #queueActiveList, #queueDoneList')) e.preventDefault();
+        });
+
         function triggerToast(msg, type = 'info') {
             const container = document.getElementById('toastContainer');
             if (!container) return;
@@ -1428,7 +1438,7 @@
                             type === 'success' ? 'bg-emerald-900 text-white' : 'bg-slate-900 text-white';
             
             toast.className = `pointer-events-auto flex items-center gap-2.5 px-4 py-2.5 rounded-xl shadow-xl text-xs font-bold ${bgClass} transition-all transform translate-y-2 opacity-0`;
-            toast.innerHTML = `<span>${type === 'danger' ? '🚨' : type === 'success' ? '✅' : 'ℹ️'}</span> <span>${msg}</span>`;
+            toast.innerHTML = `<span>${type === 'danger' ? '🚨' : type === 'success' ? '✅' : 'ℹ️'}</span> <span>${escHtml(msg)}</span>`;
             
             container.appendChild(toast);
             
@@ -1565,16 +1575,16 @@
                         </td>
                         <td class="px-4 py-3">
                             <div class="flex flex-col gap-0.5">
-                                <span class="font-extrabold text-slate-900 uppercase text-xs leading-snug">${row.paciente}</span>
+                                <span class="font-extrabold text-slate-900 uppercase text-xs leading-snug">${escHtml(row.paciente)}</span>
                                 <div class="flex items-center gap-1.5 text-[10px]">
-                                    <span class="text-slate-500 font-mono">${row.tipoDoc || 'DNI'}: ${row.dni}</span>
-                                    <span class="text-brand-700 font-bold font-mono bg-blue-50 px-1 rounded">${row.hc}</span>
+                                    <span class="text-slate-500 font-mono">${escHtml(row.tipoDoc || 'DNI')}: ${escHtml(row.dni)}</span>
+                                    <span class="text-brand-700 font-bold font-mono bg-blue-50 px-1 rounded">${escHtml(row.hc)}</span>
                                 </div>
                             </div>
                         </td>
                         <td class="px-3 py-3 text-center">
                             <span class="bg-slate-100 text-slate-700 px-2 py-0.5 rounded-lg font-bold text-[10px] inline-block">
-                                ${row.edad} / ${row.sexo}
+                                ${escHtml(row.edad)} / ${escHtml(row.sexo)}
                             </span>
                             ${imc ? `<p class="text-[8px] font-extrabold text-slate-400 mt-0.5">IMC: ${imc}</p>` : ''}
                         </td>
@@ -1591,7 +1601,7 @@
                                 <div class="flex flex-wrap items-center gap-1">
                                     ${alertsHtml}
                                     ${(row.dxVigilancia && row.dxVigilancia !== '—') ? `<span class="text-[9px] px-2 py-0.5 rounded-full border bg-purple-50 text-purple-700 border-purple-200 font-extrabold">🦠 ${row.dxVigilancia}</span>` : ''}
-                                    <span class="text-[9px] text-slate-500 italic truncate max-w-[200px]" title="${row.motivo}">"${row.motivo}"</span>
+                                    <span class="text-[9px] text-slate-500 italic truncate max-w-[200px]" title="${escHtml(row.motivo)}">"${escHtml(row.motivo)}"</span>
                                 </div>
                             </div>
                         </td>
@@ -2225,6 +2235,7 @@
             }
             updateClock();
             setInterval(updateClock, 1000);
+            if (window.innerWidth >= 768) toggleSidebar();
             bootstrapApi();
         };
 
@@ -2386,9 +2397,9 @@
                     <div class="flex items-center gap-2.5 min-w-0">
                         ${timerHtml}
                         <div class="min-w-0">
-                            <p class="font-extrabold text-slate-800 text-xs uppercase leading-snug truncate">${r.paciente}</p>
-                            <p class="text-[9px] text-slate-500 font-bold truncate">${r.hc} · ${r.edad}/${r.sexo}${r.estado === 'en_atencion' && r.medico ? ` · ${r.medico}` : ''}</p>
-                            <p class="text-[9px] text-slate-400 italic truncate">"${r.motivo}"</p>
+                            <p class="font-extrabold text-slate-800 text-xs uppercase leading-snug truncate">${escHtml(r.paciente)}</p>
+                            <p class="text-[9px] text-slate-500 font-bold truncate">${escHtml(r.hc)} · ${escHtml(r.edad)}/${escHtml(r.sexo)}${r.estado === 'en_atencion' && r.medico ? ` · ${escHtml(r.medico)}` : ''}</p>
+                            <p class="text-[9px] text-slate-400 italic truncate">"${escHtml(r.motivo)}"</p>
                         </div>
                     </div>
                     <div class="flex items-center gap-2 shrink-0">
@@ -2406,15 +2417,15 @@
                     <div class="flex items-center gap-2.5 min-w-0">
                         <span class="w-2 h-2 rounded-full ${retirado ? 'bg-slate-400' : 'bg-emerald-500'} shrink-0"></span>
                         <div class="min-w-0">
-                            <p class="font-extrabold text-slate-800 text-xs uppercase truncate">${r.paciente}</p>
-                            <p class="text-[9px] text-slate-500 font-bold truncate">${formatDate(r.fecha)} · ${r.hora} · ${retirado ? 'Se retiró sin atención' : (r.diagnostico || 'Sin diagnóstico')}</p>
+                            <p class="font-extrabold text-slate-800 text-xs uppercase truncate">${escHtml(r.paciente)}</p>
+                            <p class="text-[9px] text-slate-500 font-bold truncate">${formatDate(r.fecha)} · ${r.hora} · ${retirado ? 'Se retiró sin atención' : escHtml(r.diagnostico || 'Sin diagnóstico')}</p>
                         </div>
                     </div>
                     <div class="flex items-center gap-2 shrink-0">
                         ${retirado
                             ? `<span class="text-[8px] px-2 py-0.5 rounded-full border border-slate-300 bg-slate-100 text-slate-500 font-extrabold">RETIRADO</span>
                                <button onclick="reingresarPatient(${r.id})" title="Reingresar a la cola" class="bg-amber-500 hover:bg-amber-600 text-white px-2 py-1 rounded-lg font-bold text-xs transition-all">↩</button>`
-                            : `${r.areaDestino ? `<span class="text-[8px] px-2 py-0.5 rounded-full border border-indigo-200 bg-indigo-50 text-indigo-700 font-extrabold">→ ${r.areaDestino}</span>` : ''}`}
+                            : `${r.areaDestino ? `<span class="text-[8px] px-2 py-0.5 rounded-full border border-indigo-200 bg-indigo-50 text-indigo-700 font-extrabold">→ ${escHtml(r.areaDestino)}</span>` : ''}`}
                         <button onclick="openPatientDrawer(${r.id})" class="bg-white hover:bg-brand-50 text-slate-600 hover:text-brand-700 border border-slate-200 px-2 py-1 rounded-lg font-bold text-xs transition-all">👁️</button>
                     </div>
                 </div>`;
