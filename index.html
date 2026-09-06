@@ -108,6 +108,15 @@
             0%, 100% { opacity: 1; }
             50% { opacity: 0.6; }
         }
+
+        #labPrintArea { display: none; }
+        @media print {
+            body.print-lab > :not(#labPrintArea) { display: none !important; }
+            body.print-lab #labPrintArea { display: block !important; color: #000; }
+            #labPrintArea table { width: 100%; border-collapse: collapse; font-size: 12px; }
+            #labPrintArea th, #labPrintArea td { border: 1px solid #333; padding: 6px 8px; text-align: left; }
+            #labPrintArea th { background: #e2e8f0; }
+        }
     </style>
 </head>
 <body class="h-screen w-screen flex flex-col md:flex-row overflow-hidden bg-slate-100">
@@ -150,6 +159,11 @@
             <button onclick="switchView('estadisticas')" id="nav-estadisticas" title="Analítica Operativa" class="nav-item w-full flex items-center px-3.5 py-3 rounded-2xl transition-all text-slate-600 hover:bg-slate-50 font-semibold text-xs gap-3">
                 <span class="text-lg shrink-0">📈</span>
                 <span class="nav-label whitespace-nowrap">Analítica Operativa</span>
+            </button>
+
+            <button onclick="switchView('lab')" id="nav-lab" title="Laboratorio" class="nav-item w-full flex items-center px-3.5 py-3 rounded-2xl transition-all text-slate-600 hover:bg-slate-50 font-semibold text-xs gap-3">
+                <span class="text-lg shrink-0">🧪</span>
+                <span class="nav-label whitespace-nowrap">Laboratorio</span>
             </button>
         </nav>
     </aside>
@@ -688,6 +702,112 @@
                         </div>
                         <div class="relative w-full h-64"><canvas id="analyticsDayChart"></canvas></div>
                     </div>
+                </div>
+            </section>
+
+            <!-- ================= VISTA 6: LABORATORIO ================= -->
+            <section id="view-lab" class="view-section max-w-7xl mx-auto space-y-4">
+                <div class="bg-white rounded-3xl border border-slate-200 shadow-sm p-4 md:p-5">
+                    <h3 class="font-extrabold text-slate-800 text-sm mb-3">🧪 Buscar Paciente <span class="text-[10px] font-bold text-slate-400">(Triaje + LAB · por DNI, apellidos o HC)</span></h3>
+                    <div class="flex flex-col sm:flex-row gap-2">
+                        <input type="text" id="labSearch" oninput="labBuscar()" placeholder="Ej: 09223341, PEREZ, HC-009855..." class="filter-input flex-1 px-3 py-2 text-xs rounded-xl font-semibold">
+                        <button onclick="labMostrarNuevo()" class="bg-brand-700 hover:bg-brand-800 text-white px-4 py-2 rounded-xl text-xs font-extrabold transition-all uppercase tracking-wider whitespace-nowrap">➕ Nuevo en LAB</button>
+                    </div>
+                    <div id="labResultados" class="mt-3 space-y-2"></div>
+                </div>
+
+                <div id="labPacientePanel" class="hidden bg-white rounded-3xl border border-slate-200 shadow-sm p-4 md:p-5">
+                    <div class="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-slate-100">
+                        <div>
+                            <h3 id="labPacienteNombre" class="font-extrabold text-slate-800 text-sm uppercase">—</h3>
+                            <p id="labPacienteDatos" class="text-[11px] text-slate-500 font-bold">—</p>
+                        </div>
+                        <div class="flex gap-2 shrink-0">
+                            <button onclick="labImprimirResultados()" class="bg-slate-700 hover:bg-slate-800 text-white px-3 py-1.5 rounded-xl text-[11px] font-extrabold transition-all">🖨️ PDF</button>
+                            <button id="labBtnImportar" onclick="labImportarDeTriaje()" class="hidden bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5 rounded-xl text-[11px] font-extrabold transition-all">📥 Traer de Triaje a LAB</button>
+                        </div>
+                    </div>
+                    <h4 class="text-[11px] font-extrabold text-slate-500 uppercase tracking-wider mt-3 mb-2">Resultados de laboratorio</h4>
+                    <div id="labTablaResultados" class="space-y-2"></div>
+                    <form id="labResultadoForm" onsubmit="labAgregarResultado(event)" class="grid grid-cols-1 sm:grid-cols-12 gap-2 mt-3 pt-3 border-t border-slate-100">
+                        <div class="sm:col-span-4">
+                            <label class="text-[10px] font-bold text-slate-500 uppercase block mb-1">Examen *</label>
+                            <select id="labExamen" onchange="labCancelarCompletado()" class="filter-input w-full px-3 py-2 text-xs rounded-xl font-semibold">
+                                <option>Hemograma</option>
+                                <option>Hemoglobina</option>
+                                <option>Glucosa</option>
+                                <option>Orina completa</option>
+                                <option>Perfil lipídico</option>
+                                <option>Prueba antígeno COVID</option>
+                                <option>BK esputo</option>
+                                <option>Otro</option>
+                            </select>
+                        </div>
+                        <div class="sm:col-span-3">
+                            <label class="text-[10px] font-bold text-slate-500 uppercase block mb-1">Valor / Resultado</label>
+                            <input type="text" id="labValor" placeholder="Ej: 13.5 g/dL (vacío = solo pedido)" class="filter-input w-full px-3 py-2 text-xs rounded-xl font-mono">
+                        </div>
+                        <div class="sm:col-span-3">
+                            <label class="text-[10px] font-bold text-slate-500 uppercase block mb-1">Observación</label>
+                            <input type="text" id="labObs" placeholder="Opcional" class="filter-input w-full px-3 py-2 text-xs rounded-xl">
+                        </div>
+                        <div class="sm:col-span-2 flex items-end">
+                            <button id="labBtnGuardarRes" type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-2 rounded-xl text-xs font-extrabold transition-all uppercase">➕ Agregar</button>
+                        </div>
+                    </form>
+                </div>
+
+                <div id="labNuevoPanel" class="hidden bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
+                    <div class="bg-indigo-700 text-white px-6 py-3">
+                        <h3 class="font-extrabold text-sm">🧪 Ingreso de Paciente en LAB</h3>
+                    </div>
+                    <form id="labNuevoForm" onsubmit="labGuardarPaciente(event)" class="p-4 sm:p-5 space-y-3">
+                        <div class="grid grid-cols-1 sm:grid-cols-12 gap-3">
+                            <div class="sm:col-span-2">
+                                <label class="text-[10px] font-bold text-slate-500 uppercase block mb-1">Tipo Doc *</label>
+                                <select id="labTipoDoc" class="filter-input w-full px-3 py-2 text-xs rounded-xl font-semibold">
+                                    <option value="DNI">DNI</option>
+                                    <option value="C.E.">C.E. - Extranjería</option>
+                                    <option value="C.P.P.">C.P.P. - Permiso Temp.</option>
+                                    <option value="Pasaporte">Pasaporte</option>
+                                    <option value="Cédula Ext.">Cédula Extranjera</option>
+                                    <option value="Otro">Otro</option>
+                                </select>
+                            </div>
+                            <div class="sm:col-span-2">
+                                <label class="text-[10px] font-bold text-slate-500 uppercase block mb-1">N° Documento *</label>
+                                <input type="text" id="labDni" required placeholder="Documento" class="filter-input w-full px-3 py-2 text-xs rounded-xl font-mono">
+                            </div>
+                            <div class="sm:col-span-5">
+                                <label class="text-[10px] font-bold text-slate-500 uppercase block mb-1">Apellidos y Nombres *</label>
+                                <input type="text" id="labPaciente" required placeholder="Ej: PEREZ GARCIA, JUAN" class="filter-input w-full px-3 py-2 text-xs rounded-xl uppercase font-semibold">
+                            </div>
+                            <div class="sm:col-span-3">
+                                <label class="text-[10px] font-bold text-slate-500 uppercase block mb-1">Edad *</label>
+                                <div class="grid grid-cols-2 gap-2">
+                                    <input type="number" min="0" id="labEdad" required placeholder="Ej: 42" class="filter-input w-full px-3 py-2 text-xs rounded-xl">
+                                    <select id="labEdadUnidad" class="filter-input w-full px-2 py-2 text-xs rounded-xl font-semibold">
+                                        <option value="a">Años</option>
+                                        <option value="m">Meses</option>
+                                        <option value="d">Días</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                            <div>
+                                <label class="text-[10px] font-bold text-slate-500 uppercase block mb-1">Sexo *</label>
+                                <select id="labSexo" class="filter-input w-full px-3 py-2 text-xs rounded-xl font-semibold">
+                                    <option value="M">Masculino (M)</option>
+                                    <option value="F">Femenino (F)</option>
+                                </select>
+                            </div>
+                            <div class="sm:col-span-2 flex items-end justify-end gap-2">
+                                <button type="button" onclick="labOcultarNuevo()" class="px-4 py-2 rounded-xl text-xs font-extrabold text-slate-500 hover:bg-slate-100 border border-slate-200 transition-all uppercase">Cancelar</button>
+                                <button type="submit" class="px-4 py-2 rounded-xl text-xs font-extrabold text-white bg-indigo-700 hover:bg-indigo-800 shadow-md transition-all uppercase">💾 Guardar en LAB</button>
+                            </div>
+                        </div>
+                    </form>
                 </div>
             </section>
 
@@ -2200,7 +2320,8 @@
                 'ingreso': 'Ingreso de Pacientes',
                 'cola': 'Cola de Espera en Tiempo Real',
                 'reporte': 'Reporte de Triaje General',
-                'estadisticas': 'Analítica Operativa de Guardia'
+                'estadisticas': 'Analítica Operativa de Guardia',
+                'lab': 'Laboratorio — Resultados y Exámenes'
             };
             const titleEl = document.getElementById('viewTitle');
             if (titleEl) titleEl.innerText = titles[view] || 'Módulo de Triaje SGH';
@@ -2523,6 +2644,251 @@
                 </div>`;
         }
 
+        // ============ LABORATORIO (local; el inge extenderá la API con /api/lab) ============
+        const LAB_KEY = 'sgh_lab_v1';
+
+        function loadLabData() {
+            try {
+                const raw = JSON.parse(localStorage.getItem(LAB_KEY) || '[]');
+                if (!Array.isArray(raw)) return [];
+                raw.forEach(p => (p.resultados || []).forEach(r => {
+                    if (r.estado === 'Pendiente') r.estado = 'Pedido';
+                    else if (r.estado === 'Completado') r.estado = 'Ingresado';
+                }));
+                return raw;
+            } catch (err) { return []; }
+        }
+
+        function persistLabData() {
+            try { localStorage.setItem(LAB_KEY, JSON.stringify(LAB_DATA)); } catch (err) {}
+        }
+
+        let LAB_DATA = loadLabData();
+        let labSelected = null;
+
+        function labBuscar() {
+            const input = document.getElementById('labSearch');
+            const box = document.getElementById('labResultados');
+            if (!input || !box) return;
+            const q = input.value.toLowerCase().trim();
+            if (q.length < 2) { box.innerHTML = ''; return; }
+            const matchT = RAW_DATA.filter(r => String(r.dni).includes(q) || String(r.paciente).toLowerCase().includes(q) || String(r.hc || '').toLowerCase().includes(q)).slice(0, 8);
+            const matchL = LAB_DATA.filter(r => String(r.dni).includes(q) || String(r.paciente).toLowerCase().includes(q) || String(r.hc || '').toLowerCase().includes(q)).slice(0, 8);
+            if (!matchT.length && !matchL.length) {
+                box.innerHTML = `<p class="text-[11px] text-slate-400 font-bold p-2">Sin coincidencias — usa "➕ Nuevo en LAB" para registrarlo.</p>`;
+                return;
+            }
+            const card = (r, fuente) => `
+                <button onclick="labSeleccionar('${fuente}', ${r.id})" class="w-full text-left flex items-center justify-between gap-2 p-2.5 rounded-xl border ${fuente === 'lab' ? 'border-indigo-200 bg-indigo-50/50' : 'border-slate-200 bg-slate-50/60'} hover:border-brand-400 transition-all">
+                    <div class="min-w-0">
+                        <p class="font-extrabold text-slate-800 text-xs uppercase truncate">${escHtml(r.paciente)}</p>
+                        <p class="text-[10px] text-slate-500 font-bold truncate">${escHtml(r.tipoDoc || 'DNI')}: ${escHtml(r.dni)} · ${escHtml(r.edad)}/${escHtml(r.sexo)}${r.hc ? ` · ${escHtml(r.hc)}` : ''}</p>
+                    </div>
+                    <span class="text-[9px] px-2 py-0.5 rounded-full font-extrabold shrink-0 ${fuente === 'lab' ? 'bg-indigo-600 text-white' : 'bg-slate-200 text-slate-600'}">${fuente === 'lab' ? 'LAB' : 'TRIAJE'}</span>
+                </button>`;
+            box.innerHTML = matchL.map(r => card(r, 'lab')).join('') + matchT.map(r => card(r, 'triaje')).join('');
+        }
+
+        function labPacienteActual() {
+            if (!labSelected) return null;
+            const arr = labSelected.fuente === 'lab' ? LAB_DATA : RAW_DATA;
+            return arr.find(r => String(r.id) === String(labSelected.id)) || null;
+        }
+
+        function labSeleccionar(fuente, id) {
+            labSelected = { fuente, id };
+            document.getElementById('labNuevoPanel').classList.add('hidden');
+            labRenderPanel();
+        }
+
+        function labResultadosDe(p) {
+            if (labSelected.fuente === 'lab') return p.resultados || [];
+            const lab = LAB_DATA.find(x => String(x.dni) === String(p.dni));
+            return lab ? lab.resultados || [] : [];
+        }
+
+        function labRenderPanel() {
+            const panel = document.getElementById('labPacientePanel');
+            const p = labPacienteActual();
+            if (!panel || !p) { if (panel) panel.classList.add('hidden'); return; }
+            panel.classList.remove('hidden');
+            document.getElementById('labPacienteNombre').innerText = p.paciente;
+            document.getElementById('labPacienteDatos').innerText = `${p.tipoDoc || 'DNI'}: ${p.dni} · ${p.edad}/${p.sexo}${p.hc ? ` · HC ${p.hc}` : ' · HC pendiente'} (${labSelected.fuente === 'lab' ? 'registro LAB' : 'registro Triaje'})`;
+            const btnImp = document.getElementById('labBtnImportar');
+            if (btnImp) btnImp.classList.toggle('hidden', labSelected.fuente !== 'triaje');
+            labRenderResultados();
+        }
+
+        function labResolverLab(p) {
+            let lab = labSelected.fuente === 'lab' ? p : LAB_DATA.find(x => String(x.dni) === String(p.dni));
+            if (!lab) {
+                lab = { id: Date.now(), fecha: localDateStr(), hora: nowTime(), paciente: p.paciente, tipoDoc: p.tipoDoc || 'DNI', dni: p.dni, edad: p.edad, sexo: p.sexo, hc: p.hc || '', resultados: [] };
+                LAB_DATA.unshift(lab);
+                if (labSelected.fuente === 'triaje') labSelected = { fuente: 'lab', id: lab.id };
+            }
+            return lab;
+        }
+
+        let labCompletando = null;
+
+        function labPrepararIngreso(resId) {
+            const p = labPacienteActual();
+            if (!p) return;
+            const lab = labResolverLab(p);
+            const r = lab.resultados.find(x => String(x.id) === String(resId));
+            if (!r) return;
+            labCompletando = { labId: lab.id, resId: r.id };
+            document.getElementById('labExamen').value = r.examen;
+            document.getElementById('labValor').value = '';
+            document.getElementById('labBtnGuardarRes').innerText = '💾 Guardar resultado';
+            document.getElementById('labValor').focus();
+            triggerToast(`Ingresando resultado de: ${r.examen}`, 'info');
+        }
+
+        function labCancelarCompletado() {
+            if (!labCompletando) return;
+            labCompletando = null;
+            const btn = document.getElementById('labBtnGuardarRes');
+            if (btn) btn.innerText = '➕ Agregar';
+        }
+
+        function labRenderResultados() {
+            const box = document.getElementById('labTablaResultados');
+            const p = labPacienteActual();
+            if (!box || !p) return;
+            const res = labResultadosDe(p);
+            if (!res.length) { box.innerHTML = `<p class="text-[11px] text-slate-400 font-bold p-2">Sin pedidos ni resultados.</p>`; return; }
+            const pedidos = res.filter(r => r.estado === 'Pedido');
+            const ingres = res.filter(r => r.estado !== 'Pedido');
+            const rowPedido = (r) => `
+                <div class="flex items-center justify-between gap-2 p-2.5 rounded-xl border border-amber-200 bg-amber-50/60">
+                    <div class="min-w-0">
+                        <p class="font-extrabold text-slate-800 text-xs">${escHtml(r.examen)} <span class="text-[8px] px-1.5 py-0.5 rounded-full bg-amber-500 text-white font-extrabold ml-1">PEDIDO</span></p>
+                        <p class="text-[10px] text-slate-500 font-bold truncate">Pedido: ${r.fecha} ${r.hora}${r.observacion ? ` · ${escHtml(r.observacion)}` : ''}</p>
+                    </div>
+                    <button onclick="labPrepararIngreso(${r.id})" class="bg-indigo-600 hover:bg-indigo-700 text-white px-2.5 py-1.5 rounded-xl font-extrabold text-xs transition-all shrink-0">✏️ Ingresar</button>
+                </div>`;
+            const rowIngres = (r) => `
+                <div class="flex items-center justify-between gap-2 p-2.5 rounded-xl border border-slate-200 bg-slate-50/60">
+                    <div class="min-w-0">
+                        <p class="font-extrabold text-slate-800 text-xs">${escHtml(r.examen)} <span class="text-[8px] px-1.5 py-0.5 rounded-full bg-emerald-600 text-white font-extrabold ml-1">INGRESADO</span></p>
+                        <p class="text-[10px] text-slate-500 font-bold truncate">${r.fecha} ${r.hora}${r.valor ? ` · <span class="font-mono text-slate-700">${escHtml(r.valor)}</span>` : ''}${r.observacion ? ` · ${escHtml(r.observacion)}` : ''}</p>
+                    </div>
+                </div>`;
+            box.innerHTML =
+                (pedidos.length ? `<p class="text-[10px] font-extrabold text-amber-600 uppercase tracking-wider">📋 Pedidos (${pedidos.length})</p>` + pedidos.map(rowPedido).join('') : '') +
+                (ingres.length ? `<p class="text-[10px] font-extrabold text-emerald-600 uppercase tracking-wider mt-2">✅ Ingresados (${ingres.length})</p>` + ingres.map(rowIngres).join('') : '');
+        }
+
+        function labMostrarNuevo() {
+            labSelected = null;
+            document.getElementById('labPacientePanel').classList.add('hidden');
+            document.getElementById('labNuevoPanel').classList.remove('hidden');
+        }
+
+        function labOcultarNuevo() {
+            document.getElementById('labNuevoPanel').classList.add('hidden');
+        }
+
+        function labGuardarPaciente(e) {
+            e.preventDefault();
+            const dni = document.getElementById('labDni').value.trim();
+            if (LAB_DATA.some(x => String(x.dni) === dni)) { triggerToast('Ese documento ya existe en LAB — búscalo arriba', 'danger'); return; }
+            const edadNum = document.getElementById('labEdad').value;
+            const rec = {
+                id: Date.now(),
+                fecha: localDateStr(),
+                hora: nowTime(),
+                paciente: document.getElementById('labPaciente').value,
+                tipoDoc: document.getElementById('labTipoDoc').value,
+                dni,
+                edad: edadNum ? `${edadNum}${document.getElementById('labEdadUnidad').value}` : '',
+                sexo: document.getElementById('labSexo').value,
+                hc: '',
+                resultados: []
+            };
+            LAB_DATA.unshift(rec);
+            persistLabData();
+            document.getElementById('labNuevoForm').reset();
+            labOcultarNuevo();
+            labSelected = { fuente: 'lab', id: rec.id };
+            labRenderPanel();
+            triggerToast(`Paciente ${rec.paciente} registrado en LAB`, 'success');
+        }
+
+        function labImportarDeTriaje() {
+            const p = labPacienteActual();
+            if (!p || labSelected.fuente !== 'triaje') return;
+            let lab = LAB_DATA.find(x => String(x.dni) === String(p.dni));
+            if (!lab) {
+                lab = { id: Date.now(), fecha: localDateStr(), hora: nowTime(), paciente: p.paciente, tipoDoc: p.tipoDoc || 'DNI', dni: p.dni, edad: p.edad, sexo: p.sexo, hc: p.hc || '', resultados: [] };
+                LAB_DATA.unshift(lab);
+                persistLabData();
+            }
+            labSelected = { fuente: 'lab', id: lab.id };
+            labRenderPanel();
+            triggerToast('Paciente traído de Triaje a LAB', 'success');
+        }
+
+        function labAgregarResultado(e) {
+            e.preventDefault();
+            const p = labPacienteActual();
+            if (!p) return;
+            const lab = labResolverLab(p);
+            const examen = document.getElementById('labExamen').value;
+            const valor = document.getElementById('labValor').value.trim();
+            const obs = document.getElementById('labObs').value.trim();
+            if (labCompletando) {
+                const r = lab.resultados.find(x => String(x.id) === String(labCompletando.resId));
+                if (r) {
+                    r.valor = valor;
+                    r.observacion = obs;
+                    r.estado = valor ? 'Ingresado' : 'Pedido';
+                    r.fecha = localDateStr();
+                    r.hora = nowTime();
+                }
+                labCompletando = null;
+                document.getElementById('labBtnGuardarRes').innerText = '➕ Agregar';
+            } else if (valor) {
+                lab.resultados.unshift({ id: Date.now(), fecha: localDateStr(), hora: nowTime(), examen, valor, observacion: obs, estado: 'Ingresado' });
+            } else {
+                if (lab.resultados.some(x => x.examen === examen && x.estado === 'Pedido')) { triggerToast('Ese examen ya está pedido', 'danger'); return; }
+                lab.resultados.unshift({ id: Date.now(), fecha: localDateStr(), hora: nowTime(), examen, valor: '', observacion: obs, estado: 'Pedido' });
+            }
+            persistLabData();
+            document.getElementById('labResultadoForm').reset();
+            labRenderPanel();
+            triggerToast('LAB actualizado', 'success');
+        }
+
+        function labImprimirResultados() {
+            const p = labPacienteActual();
+            if (!p) { triggerToast('Seleccione un paciente primero', 'danger'); return; }
+            const res = labResultadosDe(p);
+            const ingres = res.filter(r => r.estado !== 'Pedido');
+            const pedidos = res.filter(r => r.estado === 'Pedido');
+            const area = document.getElementById('labPrintArea');
+            area.innerHTML = `
+                <div style="font-family: Arial, sans-serif; padding: 24px;">
+                    <h2 style="margin: 0;">🩺 SGH TRIAJE — Ficha de Resultados de Laboratorio</h2>
+                    <p style="margin: 4px 0 12px;">Emitido: ${formatDate(localDateStr())} ${nowTime()}</p>
+                    <p><b>Paciente:</b> ${escHtml(p.paciente)}<br>
+                    <b>Documento:</b> ${escHtml(p.tipoDoc || 'DNI')} ${escHtml(p.dni)} · <b>Edad:</b> ${escHtml(p.edad)} · <b>Sexo:</b> ${escHtml(p.sexo)} · <b>HC:</b> ${escHtml(p.hc || 'Pendiente')}</p>
+                    <h3>✅ Resultados ingresados (${ingres.length})</h3>
+                    ${ingres.length ? `<table><tr><th>Fecha</th><th>Hora</th><th>Examen</th><th>Valor</th><th>Observación</th></tr>${ingres.map(r => `<tr><td>${r.fecha}</td><td>${r.hora}</td><td>${escHtml(r.examen)}</td><td>${escHtml(r.valor || '—')}</td><td>${escHtml(r.observacion || '—')}</td></tr>`).join('')}</table>` : '<p>Sin resultados ingresados.</p>'}
+                    <h3>📋 Pedidos pendientes (${pedidos.length})</h3>
+                    ${pedidos.length ? `<table><tr><th>Fecha pedido</th><th>Examen</th></tr>${pedidos.map(r => `<tr><td>${r.fecha}</td><td>${escHtml(r.examen)}</td></tr>`).join('')}</table>` : '<p>Sin pedidos pendientes.</p>'}
+                    <div style="display: flex; gap: 48px; margin-top: 48px;">
+                        <div>_________________________<br>Responsable LAB</div>
+                        <div>_________________________<br>Paciente / Familiar</div>
+                    </div>
+                </div>`;
+            document.body.classList.add('print-lab');
+            window.print();
+        }
+
+        window.addEventListener('afterprint', () => document.body.classList.remove('print-lab'));
+
         // ============ ANALÍTICA AVANZADA ============
         function chartPalette(count) {
             const colors = ['#2563eb', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#f97316', '#ec4899', '#64748b', '#84cc16'];
@@ -2675,5 +3041,6 @@
             }
         }
     </script>
+    <div id="labPrintArea"></div>
 </body>
 </html>
