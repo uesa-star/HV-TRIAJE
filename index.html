@@ -875,6 +875,32 @@
         </div>
     </div>
 
+    <!-- ================= MODAL: PACIENTE YA INGRESÓ HOY ================= -->
+    <div id="duplicadoModal" class="fixed inset-0 z-50 hidden bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4">
+        <div class="bg-white rounded-3xl max-w-md w-full shadow-2xl overflow-hidden animate-fadeIn my-auto">
+            <div class="bg-amber-600 text-white px-6 py-4 flex items-center gap-3">
+                <span class="text-2xl">⚠️</span>
+                <div>
+                    <h3 class="font-extrabold text-sm sm:text-base">Paciente ya ingresó hoy</h3>
+                    <p class="text-[11px] text-amber-100">Se encontró un ingreso previo con el mismo documento</p>
+                </div>
+            </div>
+            <div class="p-5 space-y-3">
+                <p id="duplicadoInfo" class="text-xs font-bold text-slate-800"></p>
+                <div id="duplicadoLista" class="space-y-2 max-h-48 overflow-y-auto custom-scrollbar"></div>
+                <p id="duplicadoPregunta" class="text-xs text-slate-500">¿Desea registrar el nuevo ingreso de todos modos?</p>
+            </div>
+            <div class="p-4 border-t border-slate-100 bg-slate-50 flex gap-2">
+                <button id="duplicadoBtnCancelar" onclick="cerrarModalDuplicado()" class="flex-1 px-4 bg-slate-200 hover:bg-slate-300 text-slate-700 py-2.5 rounded-xl text-xs font-extrabold transition-all uppercase tracking-wider">
+                    Cancelar
+                </button>
+                <button id="duplicadoBtnContinuar" onclick="confirmarDuplicado()" class="flex-1 px-4 bg-amber-600 hover:bg-amber-700 text-white py-2.5 rounded-xl text-xs font-extrabold transition-all uppercase tracking-wider">
+                    Continuar
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- ================= MODAL: CERRAR ATENCIÓN ================= -->
     <div id="completeModal" class="fixed inset-0 z-50 hidden bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4">
         <div class="bg-white rounded-3xl max-w-lg w-full shadow-2xl overflow-hidden animate-fadeIn my-auto">
@@ -1927,6 +1953,11 @@
                 reniecIntentado[prefix] = `${tipo}:${num}`;
                 aplicarDatosFiliacion(prefix, local);
                 triggerToast(`Paciente encontrado: ${local.paciente} — datos autocompletados`, 'success');
+                const hoy = buscarIngresosHoy(tipo, num);
+                if (hoy.length) {
+                    const nomEl = document.getElementById(prefix + 'Paciente');
+                    abrirModalDuplicado({ tipoDoc: tipo, dni: num, paciente: nomEl ? nomEl.value : local.paciente }, prefix, hoy, 'aviso');
+                }
                 return;
             }
 
@@ -1951,14 +1982,75 @@
 
         // --- [HC] La HC la asigna el servidor / base de datos al integrarse (sin número local) ---
 
+        function buscarIngresosHoy(tipoDoc, dni) {
+            const d = String(dni || '').trim();
+            if (!d) return [];
+            const hoy = localDateStr();
+            return RAW_DATA.filter(r => r.fecha === hoy && String(r.dni) === d);
+        }
+
+        let pendingDuplicado = null;
+
+        function abrirModalDuplicado(v, prefix, previos, modo) {
+            pendingDuplicado = { v, prefix, modo: modo || 'guardar' };
+            document.getElementById('duplicadoInfo').innerText = `${v.tipoDoc} ${v.dni} — ${v.paciente} ingresó hoy:`;
+            document.getElementById('duplicadoLista').innerHTML = previos.map(r => `
+                <div class="p-3 rounded-xl border border-amber-200 bg-amber-50 text-xs">
+                    <p class="font-extrabold text-slate-800">🕐 ${r.hora} hrs · ${escHtml(r.especialidad || 'Sin definir')}</p>
+                    <p class="text-slate-600 font-bold">Estado: ${estadoInfo(r.estado).text}</p>
+                    <p class="text-slate-500 italic truncate" title="${escHtml(r.motivo)}">"${escHtml(r.motivo)}"</p>
+                </div>`).join('');
+            const esAviso = pendingDuplicado.modo === 'aviso';
+            document.getElementById('duplicadoPregunta').innerText = esAviso
+                ? 'El paciente ya tiene un ingreso hoy. ¿Desea seguir adelante con el nuevo ingreso?'
+                : '¿Desea registrar el nuevo ingreso de todos modos?';
+            document.getElementById('duplicadoBtnCancelar').innerText = esAviso ? '✕ No continuar' : 'Cancelar';
+            document.getElementById('duplicadoBtnContinuar').innerText = esAviso ? '✔ Seguir' : 'Continuar';
+            document.getElementById('duplicadoModal').classList.remove('hidden');
+        }
+
+        function cerrarModalDuplicado() {
+            document.getElementById('duplicadoModal').classList.add('hidden');
+            if (pendingDuplicado && pendingDuplicado.modo === 'aviso') {
+                const prefix = pendingDuplicado.prefix;
+                if (prefix === 'form') {
+                    closeNewTriageModal();
+                } else {
+                    const form = document.getElementById('ingresoForm');
+                    if (form) form.reset();
+                }
+                triggerToast('Ingreso cancelado — formulario limpio', 'info');
+            }
+            pendingDuplicado = null;
+        }
+
+        function confirmarDuplicado() {
+            if (!pendingDuplicado) return;
+            const { prefix, v, modo } = pendingDuplicado;
+            pendingDuplicado = null;
+            document.getElementById('duplicadoModal').classList.add('hidden');
+            if (modo === 'guardar') finalizarGuardado(prefix, v);
+        }
+
+        function finalizarGuardado(prefix, v) {
+            const rec = createTriageRecord(v);
+            if (prefix === 'form') {
+                closeNewTriageModal();
+            } else {
+                const form = document.getElementById('ingresoForm');
+                if (form) form.reset();
+            }
+            triageToast(rec);
+        }
+
         function saveNewTriage(e) {
             e.preventDefault();
             const v = readTriageInputs('form');
             const err = validarDoc(v);
             if (err) { triggerToast(err, 'danger'); return; }
-            const rec = createTriageRecord(v);
-            closeNewTriageModal();
-            triageToast(rec);
+            const previos = buscarIngresosHoy(v.tipoDoc, v.dni);
+            if (previos.length) { abrirModalDuplicado(v, 'form', previos); return; }
+            finalizarGuardado('form', v);
         }
 
         function limpiarIngreso() {
@@ -1967,14 +2059,14 @@
             triggerToast('Formulario limpio — listo para el siguiente paciente', 'info');
         }
 
-        function saveIngresoTriage(e) {            e.preventDefault();
+        function saveIngresoTriage(e) {
+            e.preventDefault();
             const v = readTriageInputs('ing');
             const err = validarDoc(v);
             if (err) { triggerToast(err, 'danger'); return; }
-            const rec = createTriageRecord(v);
-            const form = document.getElementById('ingresoForm');
-            if (form) form.reset();
-            triageToast(rec);
+            const previos = buscarIngresosHoy(v.tipoDoc, v.dni);
+            if (previos.length) { abrirModalDuplicado(v, 'ing', previos); return; }
+            finalizarGuardado('ing', v);
         }
 
         function openPatientDrawer(id) {
