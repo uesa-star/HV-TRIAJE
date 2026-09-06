@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SGH Hospital Ventanilla - Sistema Inteligente de Triaje</title>
+    <title>SGH - Sistema Inteligente de Triaje</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Chart.js CDN -->
@@ -168,11 +168,11 @@
                 </button>
                 <div class="hidden sm:flex items-center gap-2.5 pr-3 border-r border-slate-200">
                     <div class="w-9 h-9 bg-brand-700 text-white rounded-2xl flex items-center justify-center font-black text-lg shadow-md shadow-brand-700/30 shrink-0">
-                        🏥
+                        🩺
                     </div>
                     <div class="flex flex-col">
-                        <span class="font-extrabold text-slate-800 text-sm leading-tight tracking-tight whitespace-nowrap">HOSPITAL</span>
-                        <span class="font-black text-brand-700 text-[10px] tracking-widest whitespace-nowrap">VENTANILLA</span>
+                        <span class="font-extrabold text-slate-800 text-sm leading-tight tracking-tight whitespace-nowrap">SGH</span>
+                        <span class="font-black text-brand-700 text-[10px] tracking-widest whitespace-nowrap">TRIAJE</span>
                     </div>
                 </div>
                 <div>
@@ -1234,7 +1234,7 @@
 
         let RAW_DATA = loadData();
 
-        // --- [DATA] CAPA DE DATOS: API DEL HOSPITAL + RESGUARDO LOCAL ---
+        // --- [DATA] CAPA DE DATOS: API DEL SERVIDOR + RESGUARDO LOCAL ---
         const API_CONFIG = {
             baseUrl: 'http://172.18.26.18:8000',
             timeoutMs: 3000,
@@ -2203,7 +2203,7 @@
                 'estadisticas': 'Analítica Operativa de Guardia'
             };
             const titleEl = document.getElementById('viewTitle');
-            if (titleEl) titleEl.innerText = titles[view] || 'Triaje Hospital Ventanilla';
+            if (titleEl) titleEl.innerText = titles[view] || 'Módulo de Triaje SGH';
 
             if (view === 'dashboard') initCharts();
             if (view === 'cola') renderQueue();

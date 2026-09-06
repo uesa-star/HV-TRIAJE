@@ -24,7 +24,7 @@ Módulo web para gestionar el **triaje de emergencia**: registra pacientes, clas
 | 4 | 📊 Dashboard Real-Time | `dashboard` | KPIs del turno, flujo por hora, distribución por prioridad |
 | 5 | 📈 Analítica Operativa | `estadisticas` | 5 gráficos + KPIs (hora, prioridad, especialidad, área, día) |
 
-Encabezado: 🏥 HOSPITAL VENTANILLA · título de vista · KPIs (espera promedio, críticos) · estado de conexión · Fecha Sistema + hora en vivo · 👤 Dr. Guardia Triaje + estado. Fecha y hora usan **hora local del Perú** (no UTC).
+Encabezado: 🩺 SGH TRIAJE (marca neutra multi-institución) · título de vista · KPIs (espera promedio, críticos) · estado de conexión · Fecha Sistema + hora en vivo · 👤 Dr. Guardia Triaje + estado. Fecha y hora usan **hora local del Perú** (no UTC).
 
 ## 3. Flujo de trabajo y estados
 
@@ -76,7 +76,7 @@ Escape anti-XSS en todos los datos de paciente · clic derecho bloqueado en tabl
 ## 11. Historial de modificaciones
 
 1–15: base (persistencia, flujo, cola, analítica, API+modo local, header, menú, ingreso, tipo doc, vista inicial, usuario, anchos, guía).
-16. Guía en PDF · 17. Excel normal .xls · 18. Vigilancia FEBRIL/SOBA/IRA/EDA + columna · 19. Hora + fecha local Perú · 20. Excel por ítems + etapa de vida · 21. Orden Etapa, EDA, IRA, SOBA, Febril · 22. Sin glucosa en ingreso · 23. Botón arriba + compacto · 24. DNI primero + RENIEC + HC auto · 25. Fila Edad→HC→Sexo→Especialidad · 26. Edad junto a Nombres · 27. Retirar/Reingresar · 28. Edad número + lista · 29. Edad abajo junto a HC · 30. HC vacía (la asigna servidor) · 31. Autocompletado base local + RENIEC · 32. Botón Limpiar · 33–34. Orden y grupo de botones · 35. KPIs del Reporte · 36. KPIs un color · 37. Dx frecuente · 38. Menú inicia cerrado · 39. Blindaje · 40–42. Alerta reingreso mismo día (popup al escribir y al guardar) · 43. Guía siempre junto a cada subida.
+16. Guía en PDF · 17. Excel normal .xls · 18. Vigilancia FEBRIL/SOBA/IRA/EDA + columna · 19. Hora + fecha local Perú · 20. Excel por ítems + etapa de vida · 21. Orden Etapa, EDA, IRA, SOBA, Febril · 22. Sin glucosa en ingreso · 23. Botón arriba + compacto · 24. DNI primero + RENIEC + HC auto · 25. Fila Edad→HC→Sexo→Especialidad · 26. Edad junto a Nombres · 27. Retirar/Reingresar · 28. Edad número + lista · 29. Edad abajo junto a HC · 30. HC vacía (la asigna servidor) · 31. Autocompletado base local + RENIEC · 32. Botón Limpiar · 33–34. Orden y grupo de botones · 35. KPIs del Reporte · 36. KPIs un color · 37. Dx frecuente · 38. Menú inicia cerrado · 39. Blindaje · 40–42. Alerta reingreso mismo día (popup al escribir y al guardar) · 43. Guía siempre junto a cada subida · 44. Marca neutra SGH TRIAJE (multi-institución: hospital, LAB, más módulos).
 
 ## 12. Pendientes para aprobación del inge
 
