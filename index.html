@@ -904,6 +904,13 @@
                         <button onclick="sghRango(null)" class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-1.5 rounded-lg text-[11px] font-extrabold">🧹 Limpiar</button>
                     </div>
                     <p id="sghStatus" class="text-[11px] font-bold text-slate-500 mt-2">Sin datos. Usa 🔄 Jalar (red hospital + login) o 📂 Excel (triaje_2026.xlsx, 32k filas).</p>
+                    <div id="sghDrop" onclick="document.getElementById('sghFile').click()"
+                         ondragover="event.preventDefault();this.classList.add('border-brand-500','bg-brand-50')"
+                         ondragleave="this.classList.remove('border-brand-500','bg-brand-50')"
+                         ondrop="event.preventDefault();this.classList.remove('border-brand-500','bg-brand-50');sghLoadFile(event.dataTransfer.files[0])"
+                         class="mt-2 border-2 border-dashed border-slate-300 rounded-2xl p-3 text-center text-[11px] font-bold text-slate-500 cursor-pointer hover:bg-slate-50 transition-all">
+                        📂 Arrastra aquí el Excel exportado del SGH (o haz click para buscarlo)
+                    </div>
                 </div>
 
                 <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -3218,9 +3225,20 @@
         }
         function sghInitFechas(){
             const a = document.getElementById('sghDateStart'), b = document.getElementById('sghDateEnd');
-            if (a && !a.value) a.value = sghISO(new Date());
-            if (b && !b.value) b.value = sghISO(new Date());
-            if (SGH_DATA.length) sghRender();
+            if (SGH_DATA.length){
+                if (a) a.value = ''; if (b) b.value = '';
+                let meta = null;
+                try { meta = JSON.parse(localStorage.getItem('sgh_institucional_meta') || 'null'); } catch(e){}
+                const fecha = meta && meta.ts ? new Date(meta.ts).toLocaleString('es-PE') : '';
+                const parcial = meta && meta.count && SGH_DATA.length < meta.count
+                    ? ` ⚠️ Cache parcial: guardó los primeros ${SGH_DATA.length} de ${meta.count} — vuelve a cargar el Excel para ver todo.`
+                    : '';
+                sghSetStatus(`💾 Datos en memoria: ${SGH_DATA.length} registros${meta && meta.name ? ' de ' + meta.name : ''}${fecha ? ' (cargado ' + fecha + ')' : ''}.${parcial} Usa fechas/🔍 para filtrar o trae un Excel nuevo.`);
+                sghRender();
+            } else {
+                if (a && !a.value) a.value = sghISO(new Date());
+                if (b && !b.value) b.value = sghISO(new Date());
+            }
         }
         function sghRango(dias, esMes){
             const a = document.getElementById('sghDateStart'), b = document.getElementById('sghDateEnd');
@@ -3304,6 +3322,10 @@
         }
         function sghImportExcel(ev){
             const f = ev.target.files[0];
+            if(f) sghLoadFile(f);
+            ev.target.value = '';
+        }
+        function sghLoadFile(f){
             if(!f) return;
             sghSetStatus('📂 Leyendo Excel ' + f.name + '...');
             const reader = new FileReader();
@@ -3318,7 +3340,7 @@
                         throw new Error('SheetJS no cargó (sin internet).');
                     }
                     // Normaliza cabeceras tipo triaje_2026.xlsx: Fecha,Apellidos,Nombres,sexo,Edad,Talla,Peso,Temp,Saturac,FC,FR,PA,Hemoglo,NroHistoriaClinica,NroDocumento,Motivo,Topico,Medico
-                    SGH_DATA = rows.slice(0,5000).map(r => sghMapRow({
+                    SGH_DATA = rows.map(r => sghMapRow({
                         TriajeFecha: r.Fecha || r.TriajeFecha, Hora: r.Hora || '',
                         Apellidos: r.Apellidos, Nombres: r.Nombres, sexo: r.sexo,
                         DetEdad: r.Edad, Temp: r.Temp, Saturac: r.Saturac, FC: r.FC, FR: r.FR, PA: r.PA,
@@ -3326,15 +3348,16 @@
                         Motivo: r.Motivo, Topico: r.Topico, Medico: r.Medico
                     }));
                     localStorage.setItem('sgh_institucional', JSON.stringify(SGH_DATA.slice(0,2000)));
+                    const meta = { name: f.name, ts: Date.now(), count: SGH_DATA.length, cached: Math.min(2000, SGH_DATA.length) };
+                    localStorage.setItem('sgh_institucional_meta', JSON.stringify(meta));
                     const a = document.getElementById('sghDateStart'), b = document.getElementById('sghDateEnd');
                     if (a) a.value = ''; if (b) b.value = '';
-                    sghSetStatus(`✅ ${SGH_DATA.length} filas cargadas de ${f.name}. (Calendario en vacío = todas; ajústalo para filtrar)`);
+                    sghSetStatus(`✅ ${SGH_DATA.length} filas cargadas de ${f.name}. Se GUARDAN en este navegador: no necesitas volver a cargar hasta que salga un Excel nuevo.`);
                     triggerToast(`Excel: ${SGH_DATA.length} filas`, 'success');
                     sghRender();
                 } catch(err){ sghSetStatus('❌ Excel: ' + err.message, true); }
             };
             reader.readAsArrayBuffer(f);
-            ev.target.value = '';
         }
         function sghFiltrar(){ sghRender(); }
         function sghFechaISO(f){
