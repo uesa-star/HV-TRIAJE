@@ -895,13 +895,19 @@
                             <input type="file" id="sghFile" accept=".xlsx,.xls,.csv" class="hidden" onchange="sghImportExcel(event)">
                         </div>
                     </div>
-                    <div class="flex flex-wrap gap-2 mt-2">
+                    <div class="flex flex-wrap items-center gap-2 mt-2">
                         <span class="text-[10px] font-black text-slate-400 uppercase self-center">Rápido:</span>
                         <button onclick="sghRango(0)" class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-1.5 rounded-lg text-[11px] font-extrabold">📅 Hoy</button>
                         <button onclick="sghRango(6)" class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-1.5 rounded-lg text-[11px] font-extrabold">7 días</button>
                         <button onclick="sghRango(29)" class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-1.5 rounded-lg text-[11px] font-extrabold">30 días</button>
                         <button onclick="sghRango(-1, true)" class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-1.5 rounded-lg text-[11px] font-extrabold">🗓️ Mes actual</button>
                         <button onclick="sghRango(null)" class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-1.5 rounded-lg text-[11px] font-extrabold">🧹 Limpiar</button>
+                        <span class="text-slate-300">|</span>
+                        <button onclick="sghAbrirPegado()" class="bg-indigo-100 hover:bg-indigo-200 text-indigo-700 px-3 py-1.5 rounded-lg text-[11px] font-extrabold">📋 Pegar datos</button>
+                        <button onclick="sghExport()" class="bg-emerald-100 hover:bg-emerald-200 text-emerald-700 px-3 py-1.5 rounded-lg text-[11px] font-extrabold">📥 Exportar vista</button>
+                        <label class="flex items-center gap-1.5 text-[11px] font-bold text-slate-600 cursor-pointer select-none ml-auto" title="Al cargar un Excel nuevo, SUMA los registros nuevos sin borrar los que ya tienes">
+                            <input type="checkbox" id="sghMerge" checked class="accent-emerald-600 w-3.5 h-3.5"> ➕ Acumular (no borrar lo cargado)
+                        </label>
                     </div>
                     <p id="sghStatus" class="text-[11px] font-bold text-slate-500 mt-2">Sin datos. Usa 🔄 Jalar (red hospital + login) o 📂 Excel (triaje_2026.xlsx, 32k filas).</p>
                     <div id="sghDrop" onclick="document.getElementById('sghFile').click()"
@@ -934,6 +940,27 @@
 
         </div>
     </main>
+
+    <!-- ================= MODAL: PEGAR DATOS SGH (copiar/pegar) ================= -->
+    <div id="sghPasteModal" class="fixed inset-0 z-50 hidden bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+        <div class="bg-white rounded-3xl max-w-2xl w-full shadow-2xl overflow-hidden my-auto">
+            <div class="bg-brand-800 text-white px-6 py-4 flex items-center justify-between">
+                <div>
+                    <h3 class="font-extrabold text-sm">📋 Pegar datos del SGH</h3>
+                    <p class="text-[11px] text-brand-200">Copia filas del SGH o del Excel (Ctrl+C) y pega aquí (Ctrl+V)</p>
+                </div>
+                <button onclick="document.getElementById('sghPasteModal').classList.add('hidden')" class="text-xl hover:opacity-70">✕</button>
+            </div>
+            <div class="p-4 sm:p-5 space-y-3">
+                <textarea id="sghPasteArea" rows="9" placeholder="Pega aquí las filas... (con o sin fila de encabezados: Fecha, Apellidos, Nombres...)" class="filter-input w-full text-xs font-mono rounded-xl p-3"></textarea>
+                <div class="flex justify-end gap-2">
+                    <button onclick="document.getElementById('sghPasteModal').classList.add('hidden')" class="px-4 py-2 rounded-xl text-xs font-extrabold text-slate-500 hover:bg-slate-100 border border-slate-200 uppercase">Cancelar</button>
+                    <button onclick="sghProcesarPegado()" class="px-4 py-2 rounded-xl text-xs font-extrabold text-white bg-emerald-600 hover:bg-emerald-700 shadow-md uppercase">➕ Procesar y cargar</button>
+                </div>
+                <p class="text-[10px] text-slate-400 font-bold">Formatos aceptados: copia de la tabla del SGH (columnas separadas por tabulación) o del Excel (tabulación/punto y coma).</p>
+            </div>
+        </div>
+    </div>
 
     <!-- ================= MODAL: NUEVO REGISTRO DE TRIAJE (BASADO EN REFERENCIA) ================= -->
     <div id="newTriageModal" class="fixed inset-0 z-50 hidden bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
@@ -3340,20 +3367,21 @@
                         throw new Error('SheetJS no cargó (sin internet).');
                     }
                     // Normaliza cabeceras tipo triaje_2026.xlsx: Fecha,Apellidos,Nombres,sexo,Edad,Talla,Peso,Temp,Saturac,FC,FR,PA,Hemoglo,NroHistoriaClinica,NroDocumento,Motivo,Topico,Medico
-                    SGH_DATA = rows.map(r => sghMapRow({
+                    const mapped = rows.map(r => sghMapRow({
                         TriajeFecha: r.Fecha || r.TriajeFecha, Hora: r.Hora || '',
                         Apellidos: r.Apellidos, Nombres: r.Nombres, sexo: r.sexo,
                         DetEdad: r.Edad, Temp: r.Temp, Saturac: r.Saturac, FC: r.FC, FR: r.FR, PA: r.PA,
                         NroHistoriaClinica: r.NroHistoriaClinica, NroDocumento: r.NroDocumento,
                         Motivo: r.Motivo, Topico: r.Topico, Medico: r.Medico
                     }));
-                    localStorage.setItem('sgh_institucional', JSON.stringify(SGH_DATA.slice(0,2000)));
-                    const meta = { name: f.name, ts: Date.now(), count: SGH_DATA.length, cached: Math.min(2000, SGH_DATA.length) };
-                    localStorage.setItem('sgh_institucional_meta', JSON.stringify(meta));
+                    const res = sghMergeRows(mapped);
+                    sghPersist(f.name);
                     const a = document.getElementById('sghDateStart'), b = document.getElementById('sghDateEnd');
                     if (a) a.value = ''; if (b) b.value = '';
-                    sghSetStatus(`✅ ${SGH_DATA.length} filas cargadas de ${f.name}. Se GUARDAN en este navegador: no necesitas volver a cargar hasta que salga un Excel nuevo.`);
-                    triggerToast(`Excel: ${SGH_DATA.length} filas`, 'success');
+                    sghSetStatus(res.reemplazado
+                        ? `✅ ${res.total} filas cargadas de ${f.name}. Se GUARDAN en este navegador: no necesitas volver a cargar hasta que salga un Excel nuevo.`
+                        : `➕ Acumulado de ${f.name}: +${res.added} nuevas · total ${res.total} (duplicados ignorados).`);
+                    triggerToast(`Excel: +${res.added} de ${mapped.length} filas`, 'success');
                     sghRender();
                 } catch(err){ sghSetStatus('❌ Excel: ' + err.message, true); }
             };
@@ -3368,23 +3396,27 @@
             m = f.match(/^(\d{8})/); if(m) return `${m[1].slice(0,4)}-${m[1].slice(4,6)}-${m[1].slice(6,8)}`;
             return '';
         }
-        function sghRender(){
+        function sghFiltered(){
             const q = (document.getElementById('sghSearch').value || '').toUpperCase();
             const ini = document.getElementById('sghDateStart').value || '';
             const fin = document.getElementById('sghDateEnd').value || '';
-            const list = SGH_DATA.filter(r => {
+            return SGH_DATA.filter(r => {
                 if (q && !`${r.paciente} ${r.dni} ${r.hc}`.toUpperCase().includes(q)) return false;
                 const f = sghFechaISO(r.fecha);
                 if (ini && f && f < ini) return false;
                 if (fin && f && f > fin) return false;
                 return true;
-            }).slice(0,200);
+            });
+        }
+        function sghRender(){
+            const full = sghFiltered();
+            const list = full.slice(0,200);
             const tb = document.getElementById('sghTableBody');
             const badge = (riesgo) => riesgo==='critico' ? '<span class="bg-red-600 text-white px-2 py-0.5 rounded-lg font-bold">P-I CRÍTICO</span>'
                 : riesgo==='alto' ? '<span class="bg-orange-500 text-white px-2 py-0.5 rounded-lg font-bold">P-II URGENTE</span>'
                 : riesgo==='moderado' ? '<span class="bg-yellow-500 text-white px-2 py-0.5 rounded-lg font-bold">P-III MODERADO</span>'
                 : '<span class="bg-green-600 text-white px-2 py-0.5 rounded-lg font-bold">P-IV ESTABLE</span>';
-            tb.innerHTML = list.length ? list.map((r,i) => `<tr class="border-b table-row-hover">
+            tb.innerHTML = full.length ? list.map(r => `<tr class="border-b table-row-hover">
                 <td class="p-2 whitespace-nowrap">${escHtml(r.fecha||'')} ${escHtml(r.hora||'')}</td>
                 <td class="p-2 font-mono">${escHtml(r.hc||'')}</td><td class="p-2 font-mono">${escHtml(r.dni||'')}</td>
                 <td class="p-2 font-semibold uppercase">${escHtml(r.paciente||'')}</td>
@@ -3392,11 +3424,12 @@
                 <td class="p-2 text-center whitespace-nowrap">${escHtml(String(r.paSist||''))}/${escHtml(String(r.paDiast||''))}</td>
                 <td class="p-2 text-center">${badge(r.riesgo)}</td>
                 <td class="p-2 text-center"><button onclick="sghPasar(${SGH_DATA.indexOf(r)})" class="bg-slate-800 hover:bg-slate-900 text-white px-2 py-1 rounded-lg text-[10px] font-bold">⬇ A mi cola</button></td>
-            </tr>`).join('') : `<tr><td colspan="9" class="p-6 text-center font-bold ${SGH_DATA.length ? 'text-slate-400' : 'text-amber-600'}">${SGH_DATA.length ? '🔍 Sin resultados — ajusta fechas o búsqueda' : '📭 Sin datos cargados — usa 🔄 Jalar (red hospital con sesión) o 📂 Excel (triaje_2026.xlsx)'}</td></tr>`;
-            document.getElementById('sghTotal').innerText = list.length;
-            document.getElementById('sghP1').innerText = list.filter(r=>r.riesgo==='critico').length;
-            document.getElementById('sghP2').innerText = list.filter(r=>r.riesgo==='alto').length;
-            const top = countBy(list, r=>r.especialidad||'—');
+            </tr>`).join('') + (full.length > 200 ? `<tr><td colspan="9" class="p-2 text-center text-[10px] font-bold text-slate-400">Mostrando los primeros 200 de ${full.length} — usa fechas/búsqueda para acotar (los KPIs y 📥 Exportar usan los ${full.length})</td></tr>` : '')
+            : `<tr><td colspan="9" class="p-6 text-center font-bold ${SGH_DATA.length ? 'text-slate-400' : 'text-amber-600'}">${SGH_DATA.length ? '🔍 Sin resultados — ajusta fechas o búsqueda' : '📭 Sin datos cargados — usa 🔄 Jalar (red hospital con sesión) o 📂 Excel (triaje_2026.xlsx)'}</td></tr>`;
+            document.getElementById('sghTotal').innerText = full.length;
+            document.getElementById('sghP1').innerText = full.filter(r=>r.riesgo==='critico').length;
+            document.getElementById('sghP2').innerText = full.filter(r=>r.riesgo==='alto').length;
+            const top = countBy(full, r=>r.especialidad||'—');
             document.getElementById('sghTop').innerText = top.labels.length && top.labels[0]!=='—' ? top.labels[top.values.indexOf(Math.max(...top.values))] : '—';
         }
         function sghPasar(idx){
@@ -3414,6 +3447,124 @@
             try { persistData(); } catch(e){}
             triggerToast(`✅ ${r.paciente} pasado a mi cola (${rec.riesgo})`, 'success');
             if(typeof renderQueue === 'function') renderQueue();
+        }
+
+        // ---- Acumular / persistir ----
+        function sghKey(r){ return `${r.fecha||''}|${r.hora||''}|${r.dni||''}|${r.hc||''}|${(r.paciente||'').toUpperCase()}`; }
+        function sghMergeRows(incoming){
+            const chk = document.getElementById('sghMerge');
+            const merge = chk ? chk.checked : false;
+            if (!merge || !SGH_DATA.length){ SGH_DATA = incoming; return { added: incoming.length, total: incoming.length, reemplazado: true }; }
+            const keys = new Set(SGH_DATA.map(sghKey));
+            let added = 0;
+            incoming.forEach(r => { const k = sghKey(r); if (!keys.has(k)) { keys.add(k); SGH_DATA.push(r); added++; } });
+            return { added, total: SGH_DATA.length, reemplazado: false };
+        }
+        function sghPersist(name){
+            try {
+                localStorage.setItem('sgh_institucional', JSON.stringify(SGH_DATA.slice(0,2000)));
+                localStorage.setItem('sgh_institucional_meta', JSON.stringify({ name, ts: Date.now(), count: SGH_DATA.length, cached: Math.min(2000, SGH_DATA.length) }));
+            } catch(e){ console.warn('No se pudo guardar cache SGH:', e); }
+        }
+
+        // ---- Pegar datos (Ctrl+C en SGH/Excel -> Ctrl+V aquí) ----
+        function sghAbrirPegado(){
+            const m = document.getElementById('sghPasteModal');
+            if (m) m.classList.remove('hidden');
+            const ta = document.getElementById('sghPasteArea');
+            if (ta) { ta.value = ''; setTimeout(()=>ta.focus(), 50); }
+        }
+        function sghNorm(h){ return String(h||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]/g,''); }
+        const SGH_ALIAS = {
+            fecha:'TriajeFecha', triajefecha:'TriajeFecha', hora:'Hora',
+            hc:'NroHistoriaClinica', nrohc:'NroHistoriaClinica', nrohistoriaclinica:'NroHistoriaClinica', historia:'NroHistoriaClinica',
+            documento:'NroDocumento', nrodocumento:'NroDocumento', dni:'NroDocumento', numerodocumento:'NroDocumento', documentonum:'NroDocumento', documentonro:'NroDocumento', documenton:'NroDocumento',
+            apellidos:'Apellidos', apellido:'Apellidos', nombres:'Nombres', nombre:'Nombres', paciente:'__PACIENTE',
+            sexo:'sexo', edad:'DetEdad', talla:'Talla', peso:'Peso',
+            temp:'Temp', temperatura:'Temp', t:'Temp',
+            sat:'Saturac', saturac:'Saturac', saturacion:'Saturac', spo2:'Saturac', sato2:'Saturac',
+            fc:'FC', frecuenciacardiaca:'FC', fr:'FR', frecuenciarespiratoria:'FR',
+            pa:'PA', presionarterial:'PA', hemoglobina:'Hemoglo', hemoglo:'Hemoglo', hemog:'Hemoglo',
+            motivo:'Motivo', topico:'Topico', tema:'Topico', medico:'Medico'
+        };
+        const SGH_WEB_ORDER = ['TriajeFecha','Hora','nro_Orden','nro_atencion','nro_cuenta','NroHistoriaClinica','NroDocumento','Apellidos','Nombres','sexo','DetEdad','Talla','Peso','Temp','Saturac','FC','FR','PA','Hemoglo','Motivo','Topico','Medico','username'];
+        const SGH_XLSX_ORDER = ['Fecha','Apellidos','Nombres','sexo','Edad','Talla','Peso','Temp','Saturac','FC','FR','PA','Hemoglo','NroHistoriaClinica','NroDocumento','Motivo','Topico','Medico'];
+        function sghParseRows(text){
+            const lines = String(text||'').replace(/\r/g,'').split('\n').filter(l => l.trim() !== '');
+            if (!lines.length) return [];
+            const cells = l => l.includes('\t') ? l.split('\t') : l.split(';');
+            const first = cells(lines[0]);
+            const headNorm = first.map(sghNorm);
+            const hasHeader = headNorm.some(h => ['fecha','apellidos','triajefecha','paciente','documento','nrodocumento'].includes(h));
+            const out = [];
+            if (hasHeader){
+                const map = headNorm.map(h => SGH_ALIAS[h] || null);
+                lines.slice(1).forEach(line => {
+                    const c = cells(line);
+                    const o = {};
+                    map.forEach((key,i) => { if (key && c[i] !== undefined){ if (key === '__PACIENTE') o.paciente = c[i]; else o[key] = c[i]; } });
+                    if (o.paciente && !o.Apellidos) { const p = o.paciente.split(','); o.Apellidos = p[0]; o.Nombres = p.slice(1).join(',').trim(); }
+                    out.push(o);
+                });
+            } else {
+                const n = first.length;
+                const order = n >= 20 ? SGH_WEB_ORDER : SGH_XLSX_ORDER;
+                lines.forEach(line => {
+                    const c = cells(line);
+                    const o = {};
+                    order.forEach((key,i) => { if (c[i] !== undefined) o[key] = c[i]; });
+                    out.push(o);
+                });
+            }
+            return out;
+        }
+        function sghProcesarPegado(){
+            const ta = document.getElementById('sghPasteArea');
+            const raw = ta ? ta.value : '';
+            if (!raw.trim()){ triggerToast('Pega datos primero (Ctrl+V)', 'error'); return; }
+            try {
+                const objs = sghParseRows(raw);
+                if (!objs.length) throw new Error('No se detectaron filas');
+                const mapped = objs.map(sghMapRow).filter(r => r.paciente || r.dni || r.hc);
+                if (!mapped.length) throw new Error('Filas sin paciente/DNI/HC — revisa la copia');
+                const res = sghMergeRows(mapped);
+                sghPersist('Pegado manual ' + new Date().toLocaleDateString('es-PE'));
+                const a = document.getElementById('sghDateStart'), b = document.getElementById('sghDateEnd');
+                if (a) a.value = ''; if (b) b.value = '';
+                document.getElementById('sghPasteModal').classList.add('hidden');
+                sghSetStatus(res.reemplazado
+                    ? `✅ ${res.total} filas cargadas desde pegado.`
+                    : `➕ Acumulado: +${res.added} nuevas (de ${mapped.length} pegadas) · total ${res.total}. Duplicados ignorados.`);
+                triggerToast(`Pegado: +${res.added} registros`, 'success');
+                sghRender();
+            } catch(err){ triggerToast('Pegado: ' + err.message, 'error'); }
+        }
+
+        // ---- Exportar vista filtrada a .xls ----
+        function sghExport(){
+            const data = sghFiltered();
+            if (!data.length){ triggerToast('No hay datos para exportar', 'error'); return; }
+            const headers = ['Fecha','Hora','HC','DNI','Paciente','Sexo','Edad','Talla','Peso','T','SAT','FC','FR','PA','Motivo','Topico','Medico','Mi_Prioridad'];
+            const esc = v => String(v ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+            let xml = '<?xml version="1.0" encoding="UTF-8"?>';
+            xml += '<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">';
+            xml += '<Styles><Style ss:ID="hdr"><Font ss:Bold="1" ss:Color="#FFFFFF"/><Interior ss:Color="#1D4ED8" ss:Pattern="Solid"/></Style></Styles>';
+            xml += '<Worksheet ss:Name="SGH Institucional"><Table>';
+            xml += '<Row>' + headers.map(h => `<Cell ss:StyleID="hdr"><Data ss:Type="String">${h}</Data></Cell>`).join('') + '</Row>';
+            data.forEach(r => {
+                const row = [r.fecha, r.hora, r.hc, r.dni, r.paciente, r.sexo, r.edad, '', '', r.t, r.sat, r.fc, r.fr, `${r.paSist||''}/${r.paDiast||''}`, r.motivo, r.especialidad, r.medico, r.riesgo];
+                xml += '<Row>' + row.map(v => `<Cell><Data ss:Type="String">${esc(v)}</Data></Cell>`).join('') + '</Row>';
+            });
+            xml += '</Table></Worksheet></Workbook>';
+            const blob = new Blob(['\ufeff' + xml], { type: 'application/vnd.ms-excel' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = `SGH_Institucional_${localDateStr()}.xls`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            setTimeout(() => URL.revokeObjectURL(link.href), 1000);
+            triggerToast(`Excel SGH: ${data.length} registros`, 'success');
         }
 
         function toggleSidebar() {
