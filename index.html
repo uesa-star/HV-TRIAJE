@@ -9,6 +9,8 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Chart.js CDN -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- SheetJS para importar Excel SGH -->
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -164,6 +166,11 @@
             <button onclick="switchView('lab')" id="nav-lab" title="Laboratorio" class="nav-item w-full flex items-center px-3.5 py-3 rounded-2xl transition-all text-slate-600 hover:bg-slate-50 font-semibold text-xs gap-3">
                 <span class="text-lg shrink-0">🧪</span>
                 <span class="nav-label whitespace-nowrap">Laboratorio</span>
+            </button>
+
+            <button onclick="switchView('sgh')" id="nav-sgh" title="SGH Institucional - Reporte Hospital" class="nav-item w-full flex items-center px-3.5 py-3 rounded-2xl transition-all text-slate-600 hover:bg-slate-50 font-semibold text-xs gap-3">
+                <span class="text-lg shrink-0">🏥</span>
+                <span class="nav-label whitespace-nowrap">SGH Institucional</span>
             </button>
         </nav>
     </aside>
@@ -808,6 +815,58 @@
                             </div>
                         </div>
                     </form>
+                </div>
+            </section>
+
+            <!-- ================= VISTA 7: SGH INSTITUCIONAL (solo lectura) ================= -->
+            <section id="view-sgh" class="view-section max-w-7xl mx-auto space-y-4">
+                <div class="bg-slate-900 text-white rounded-3xl p-4 md:p-5 flex flex-wrap items-center justify-between gap-2">
+                    <div>
+                        <h3 class="font-extrabold text-sm">🏥 SGH Institucional — Reporte Hospital <span class="text-[10px] font-bold text-slate-300">(solo lectura · no edita SGH)</span></h3>
+                        <p class="text-[11px] text-slate-300">Fuente: <span class="font-mono">http://172.18.26.18/SGH/public/rpttriajefechas</span> · Requiere login SGH en red 172.18.x.x · En Vercel usa 📂 Excel</p>
+                    </div>
+                    <span class="text-[10px] font-bold bg-amber-400 text-slate-900 px-2 py-1 rounded-lg">HTTP hospital · Vercel HTTPS usa Excel</span>
+                </div>
+
+                <div class="bg-white rounded-3xl border border-slate-200 shadow-sm p-4 md:p-5">
+                    <div class="grid grid-cols-2 md:grid-cols-12 gap-2">
+                        <div class="md:col-span-2">
+                            <label class="text-[10px] font-bold text-slate-500 uppercase block mb-1">F. Inicial</label>
+                            <input type="text" id="sghDateStart" placeholder="05/10/2026" class="filter-input w-full px-3 py-2 text-xs rounded-xl font-semibold">
+                        </div>
+                        <div class="md:col-span-2">
+                            <label class="text-[10px] font-bold text-slate-500 uppercase block mb-1">F. Final</label>
+                            <input type="text" id="sghDateEnd" placeholder="05/10/2026" class="filter-input w-full px-3 py-2 text-xs rounded-xl font-semibold">
+                        </div>
+                        <div class="md:col-span-4">
+                            <label class="text-[10px] font-bold text-slate-500 uppercase block mb-1">Paciente / DNI / HC</label>
+                            <input type="text" id="sghSearch" oninput="sghFiltrar()" placeholder="PEREZ, 48215520, HC..." class="filter-input w-full px-3 py-2 text-xs rounded-xl font-semibold">
+                        </div>
+                        <div class="md:col-span-4 flex items-end gap-2">
+                            <button onclick="sghJalar()" class="flex-1 bg-blue-700 hover:bg-blue-800 text-white px-3 py-2 rounded-xl text-xs font-extrabold uppercase">🔄 Jalar del SGH</button>
+                            <button onclick="document.getElementById('sghFile').click()" class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-2 rounded-xl text-xs font-extrabold uppercase">📂 Excel</button>
+                            <input type="file" id="sghFile" accept=".xlsx,.xls,.csv" class="hidden" onchange="sghImportExcel(event)">
+                        </div>
+                    </div>
+                    <p id="sghStatus" class="text-[11px] font-bold text-slate-500 mt-2">Sin datos. Usa 🔄 Jalar (red hospital + login) o 📂 Excel (triaje_2026.xlsx, 32k filas).</p>
+                </div>
+
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+                    <div class="bg-white p-4 rounded-3xl border shadow-sm text-center"><p class="text-[10px] font-extrabold text-slate-400 uppercase">Total SGH</p><h3 id="sghTotal" class="text-2xl font-black">0</h3></div>
+                    <div class="bg-white p-4 rounded-3xl border border-red-200 shadow-sm text-center"><p class="text-[10px] font-extrabold text-red-400 uppercase">P-I calculado</p><h3 id="sghP1" class="text-2xl font-black text-red-600">0</h3></div>
+                    <div class="bg-white p-4 rounded-3xl border border-orange-200 shadow-sm text-center"><p class="text-[10px] font-extrabold text-orange-400 uppercase">P-II calculado</p><h3 id="sghP2" class="text-2xl font-black text-orange-500">0</h3></div>
+                    <div class="bg-white p-4 rounded-3xl border border-blue-200 shadow-sm text-center"><p class="text-[10px] font-extrabold text-blue-400 uppercase">Top tópico</p><h3 id="sghTop" class="text-sm font-black mt-1">—</h3></div>
+                </div>
+
+                <div class="bg-white rounded-3xl border shadow-sm overflow-hidden">
+                    <div class="overflow-x-auto custom-scrollbar">
+                        <table class="w-full text-[11px]">
+                            <thead class="bg-slate-800 text-white">
+                                <tr><th class="p-2 text-left">Fecha/Hora</th><th class="p-2 text-left">HC</th><th class="p-2 text-left">DNI</th><th class="p-2 text-left">Paciente</th><th class="p-2">T°</th><th class="p-2">SAT</th><th class="p-2">PA</th><th class="p-2">Mi Prioridad</th><th class="p-2">Acción</th></tr>
+                            </thead>
+                            <tbody id="sghTableBody"><tr><td colspan="9" class="p-6 text-center text-slate-400 font-bold">🔍 Sin datos SGH — jala del hospital o carga Excel</td></tr></tbody>
+                        </table>
+                    </div>
                 </div>
             </section>
 
@@ -2321,7 +2380,8 @@
                 'cola': 'Cola de Espera en Tiempo Real',
                 'reporte': 'Reporte de Triaje General',
                 'estadisticas': 'Analítica Operativa de Guardia',
-                'lab': 'Laboratorio — Resultados y Exámenes'
+                'lab': 'Laboratorio — Resultados y Exámenes',
+                'sgh': 'SGH Institucional — Reporte Hospital (solo lectura)'
             };
             const titleEl = document.getElementById('viewTitle');
             if (titleEl) titleEl.innerText = titles[view] || 'Módulo de Triaje SGH';
@@ -2330,6 +2390,7 @@
             if (view === 'cola') renderQueue();
             if (view === 'estadisticas') refreshAnalytics();
             if (view === 'reporte') executeFilter();
+            if (view === 'sgh') sghInitFechas();
         }
 
         function initCharts() {
@@ -2987,6 +3048,152 @@
             const dayLabels = countBy(RAW_DATA, r => r.fecha).labels.sort((a, b) => a.localeCompare(b));
             const dayValues = dayLabels.map(d => RAW_DATA.filter(r => r.fecha === d).length);
             setChartData(analyticsCharts.day, { labels: dayLabels.map(formatDate), values: dayValues, label: 'Pacientes', colors: ['#2563eb'], type: 'line' });
+        }
+
+        // ============ SGH INSTITUCIONAL (solo lectura -> mi cola) ============
+        const SGH_BASE = 'http://172.18.26.18/SGH/public';
+        let SGH_DATA = [];
+        try { SGH_DATA = JSON.parse(localStorage.getItem('sgh_institucional') || '[]'); } catch(e){ SGH_DATA = []; }
+
+        function sghSetStatus(msg, isErr){
+            const el = document.getElementById('sghStatus');
+            if (el) { el.innerText = msg; el.className = 'text-[11px] font-bold mt-2 ' + (isErr ? 'text-red-600' : 'text-slate-500'); }
+        }
+        function sghToYMD(dmy){
+            if(!dmy) return '';
+            const m = dmy.match(/^(\d{2})\/(\d{2})\/(\d{4})/);
+            return m ? `${m[3]}${m[2]}${m[1]}` : dmy;
+        }
+        function sghInitFechas(){
+            const hoy = new Date();
+            const dmy = `${String(hoy.getDate()).padStart(2,'0')}/${String(hoy.getMonth()+1).padStart(2,'0')}/${hoy.getFullYear()}`;
+            const a = document.getElementById('sghDateStart'), b = document.getElementById('sghDateEnd');
+            if (a && !a.value) a.value = dmy;
+            if (b && !b.value) b.value = dmy;
+            if (SGH_DATA.length) sghRender();
+        }
+        function sghParsePA(paStr){
+            if(!paStr) return {sist:'', diast:''};
+            const m = String(paStr).match(/(\d+)\s*\/\s*(\d+)/);
+            return m ? {sist:m[1], diast:m[2]} : {sist:'', diast:''};
+        }
+        function sghMapRow(r){
+            const pa = sghParsePA(r.PA || r.pa || '');
+            const nombre = [r.Apellidos, r.Nombres].filter(Boolean).join(', ') || r.paciente || r.Paciente || '';
+            const obj = {
+                fecha: (r.TriajeFecha || r.Fecha || '').slice(0,10),
+                hora: r.Hora || r.hora || '',
+                hc: r.NroHistoriaClinica || r.NroHistoria || r.HC || '',
+                dni: String(r.NroDocumento || r.NroDocumento || r.DNI || ''),
+                paciente: nombre,
+                sexo: r.sexo || r.Sexo || '',
+                edad: parseInt(r.DetEdad) || r.Edad || '',
+                t: parseFloat(r.Temp ?? r.Tem ?? r.Temp) || '',
+                sat: parseFloat(r.Saturac ?? r.Saturac) || '',
+                fc: parseFloat(r.FC) || '',
+                fr: parseFloat(r.FR) || '',
+                paSist: pa.sist, paDiast: pa.diast,
+                motivo: r.Motivo || r.motivo || '',
+                especialidad: r.Topico || r.Topico || '',
+                medico: r.Medico || '',
+                _sgh: r
+            };
+            try { obj.riesgo = calculateTriagePriority(obj.paSist, obj.paDiast, obj.fc, obj.fr, obj.sat, obj.t, ''); } catch(e){ obj.riesgo = 'estable'; }
+            return obj;
+        }
+        async function sghJalar(){
+            const fi = sghToYMD(document.getElementById('sghDateStart').value);
+            const ff = sghToYMD(document.getElementById('sghDateEnd').value);
+            const q = document.getElementById('sghSearch').value || '';
+            sghSetStatus('🔄 Jalando del SGH... (requiere login SGH en red 172.18.x.x)');
+            try {
+                const url = `${SGH_BASE}/rpttriajefechas?fechini=${encodeURIComponent(fi)}&fechfin=${encodeURIComponent(ff)}&txtfind=${encodeURIComponent(q)}`;
+                const res = await fetch(url, { credentials: 'include', headers: { 'Accept': 'application/json' } });
+                if(!res.ok) throw new Error('HTTP ' + res.status);
+                const json = await res.json();
+                if(!json.data){ throw new Error('Sin sesión SGH (data:null). Abre el SGH en otra pestaña e inicia sesión, o usa 📂 Excel.'); }
+                SGH_DATA = json.data.map(sghMapRow);
+                localStorage.setItem('sgh_institucional', JSON.stringify(SGH_DATA.slice(0,2000)));
+                sghSetStatus(`✅ ${SGH_DATA.length} registros jalados del SGH (${fi} al ${ff}).`);
+                triggerToast(`SGH: ${SGH_DATA.length} registros`, 'success');
+                sghRender();
+            } catch(err){
+                console.error(err);
+                sghSetStatus('❌ ' + err.message + ' En Vercel (HTTPS→HTTP) el navegador lo bloquea: usa 📂 Excel.', true);
+                triggerToast('SGH bloqueado, usa Excel', 'error');
+            }
+        }
+        function sghImportExcel(ev){
+            const f = ev.target.files[0];
+            if(!f) return;
+            sghSetStatus('📂 Leyendo Excel ' + f.name + '...');
+            const reader = new FileReader();
+            reader.onload = function(e){
+                try {
+                    let rows = [];
+                    if(typeof XLSX !== 'undefined'){
+                        const wb = XLSX.read(e.target.result, {type:'array'});
+                        const ws = wb.Sheets[wb.SheetNames[0]];
+                        rows = XLSX.utils.sheet_to_json(ws, {defval:''});
+                    } else {
+                        throw new Error('SheetJS no cargó (sin internet).');
+                    }
+                    // Normaliza cabeceras tipo triaje_2026.xlsx: Fecha,Apellidos,Nombres,sexo,Edad,Talla,Peso,Temp,Saturac,FC,FR,PA,Hemoglo,NroHistoriaClinica,NroDocumento,Motivo,Topico,Medico
+                    SGH_DATA = rows.slice(0,5000).map(r => sghMapRow({
+                        TriajeFecha: r.Fecha || r.TriajeFecha, Hora: r.Hora || '',
+                        Apellidos: r.Apellidos, Nombres: r.Nombres, sexo: r.sexo,
+                        DetEdad: r.Edad, Temp: r.Temp, Saturac: r.Saturac, FC: r.FC, FR: r.FR, PA: r.PA,
+                        NroHistoriaClinica: r.NroHistoriaClinica, NroDocumento: r.NroDocumento,
+                        Motivo: r.Motivo, Topico: r.Topico, Medico: r.Medico
+                    }));
+                    localStorage.setItem('sgh_institucional', JSON.stringify(SGH_DATA.slice(0,2000)));
+                    sghSetStatus(`✅ ${SGH_DATA.length} filas cargadas de ${f.name}.`);
+                    triggerToast(`Excel: ${SGH_DATA.length} filas`, 'success');
+                    sghRender();
+                } catch(err){ sghSetStatus('❌ Excel: ' + err.message, true); }
+            };
+            reader.readAsArrayBuffer(f);
+            ev.target.value = '';
+        }
+        function sghFiltrar(){ sghRender(); }
+        function sghRender(){
+            const q = (document.getElementById('sghSearch').value || '').toUpperCase();
+            const list = SGH_DATA.filter(r => !q || `${r.paciente} ${r.dni} ${r.hc}`.toUpperCase().includes(q)).slice(0,200);
+            const tb = document.getElementById('sghTableBody');
+            const badge = (riesgo) => riesgo==='critico' ? '<span class="bg-red-600 text-white px-2 py-0.5 rounded-lg font-bold">P-I CRÍTICO</span>'
+                : riesgo==='alto' ? '<span class="bg-orange-500 text-white px-2 py-0.5 rounded-lg font-bold">P-II URGENTE</span>'
+                : riesgo==='moderado' ? '<span class="bg-yellow-500 text-white px-2 py-0.5 rounded-lg font-bold">P-III MODERADO</span>'
+                : '<span class="bg-green-600 text-white px-2 py-0.5 rounded-lg font-bold">P-IV ESTABLE</span>';
+            tb.innerHTML = list.length ? list.map((r,i) => `<tr class="border-b table-row-hover">
+                <td class="p-2 whitespace-nowrap">${escHtml(r.fecha||'')} ${escHtml(r.hora||'')}</td>
+                <td class="p-2 font-mono">${escHtml(r.hc||'')}</td><td class="p-2 font-mono">${escHtml(r.dni||'')}</td>
+                <td class="p-2 font-semibold uppercase">${escHtml(r.paciente||'')}</td>
+                <td class="p-2 text-center">${escHtml(String(r.t||''))}</td><td class="p-2 text-center">${escHtml(String(r.sat||''))}</td>
+                <td class="p-2 text-center whitespace-nowrap">${escHtml(String(r.paSist||''))}/${escHtml(String(r.paDiast||''))}</td>
+                <td class="p-2 text-center">${badge(r.riesgo)}</td>
+                <td class="p-2 text-center"><button onclick="sghPasar(${SGH_DATA.indexOf(r)})" class="bg-slate-800 hover:bg-slate-900 text-white px-2 py-1 rounded-lg text-[10px] font-bold">⬇ A mi cola</button></td>
+            </tr>`).join('') : '<tr><td colspan="9" class="p-6 text-center text-slate-400 font-bold">🔍 Sin resultados — ajusta filtros</td></tr>';
+            document.getElementById('sghTotal').innerText = SGH_DATA.length;
+            document.getElementById('sghP1').innerText = SGH_DATA.filter(r=>r.riesgo==='critico').length;
+            document.getElementById('sghP2').innerText = SGH_DATA.filter(r=>r.riesgo==='alto').length;
+            const top = countBy(SGH_DATA, r=>r.especialidad||'—');
+            document.getElementById('sghTop').innerText = top.labels.length ? top.labels[top.values.indexOf(Math.max(...top.values))] : '—';
+        }
+        function sghPasar(idx){
+            const r = SGH_DATA[idx];
+            if(!r) return;
+            const rec = {
+                id: 'sgh-' + Date.now(), fecha: r.fecha || todayStr(), hora: r.hora || nowTime(),
+                paciente: r.paciente, tipoDoc: 'DNI', dni: r.dni, hc: r.hc, edad: r.edad, sexo: r.sexo,
+                especialidad: r.especialidad || 'Sin definir',
+                paSist: r.paSist, paDiast: r.paDiast, fc: r.fc, fr: r.fr, sat: r.sat, t: r.t,
+                motivo: r.motivo || 'Traído de SGH', medico: r.medico || '',
+                riesgo: r.riesgo || 'estable', estado: 'en_espera', horaInicio: null
+            };
+            RAW_DATA.unshift(rec);
+            try { persistData(); } catch(e){}
+            triggerToast(`✅ ${r.paciente} pasado a mi cola (${rec.riesgo})`, 'success');
+            if(typeof renderQueue === 'function') renderQueue();
         }
 
         function toggleSidebar() {
