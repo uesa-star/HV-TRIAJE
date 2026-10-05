@@ -3199,6 +3199,7 @@
 
         // ============ SGH INSTITUCIONAL (solo lectura -> mi cola) ============
         const SGH_BASE = 'http://172.18.26.18/SGH/public';
+        const SGH_PROXY = ''; // Opcional: URL HTTPS de un proxy hacia el SGH (ej. 'https://tudominio/sgp')
         let SGH_DATA = [];
         try { SGH_DATA = JSON.parse(localStorage.getItem('sgh_institucional') || '[]'); } catch(e){ SGH_DATA = []; }
 
@@ -3268,22 +3269,37 @@
             const fi = sghToYMD(document.getElementById('sghDateStart').value);
             const ff = sghToYMD(document.getElementById('sghDateEnd').value);
             const q = document.getElementById('sghSearch').value || '';
+            // Detección preventiva: sitio en HTTPS (Vercel) no puede llamar a un servidor HTTP privado
+            if (location.protocol === 'https:' && SGH_BASE.startsWith('http://') && !SGH_PROXY){
+                sghSetStatus('🔒 Este sitio está en HTTPS (Vercel) y el SGH del hospital es HTTP privado (172.18.26.18): el navegador PROHÍBE esa conexión por seguridad (mixed content). Opciones: ① usa 📂 Excel, ② abre este módulo dentro de la red del hospital servido por el mismo servidor SGH, o ③ define SGH_PROXY con un proxy HTTPS.', true);
+                triggerToast('🔒 HTTPS bloquea HTTP: usa 📂 Excel', 'error');
+                return;
+            }
             sghSetStatus('🔄 Jalando del SGH... (requiere login SGH en red 172.18.x.x)');
             try {
-                const url = `${SGH_BASE}/rpttriajefechas?fechini=${encodeURIComponent(fi)}&fechfin=${encodeURIComponent(ff)}&txtfind=${encodeURIComponent(q)}`;
+                const base = SGH_PROXY || SGH_BASE;
+                const url = `${base}/rpttriajefechas?fechini=${encodeURIComponent(fi)}&fechfin=${encodeURIComponent(ff)}&txtfind=${encodeURIComponent(q)}`;
                 const res = await fetch(url, { credentials: 'include', headers: { 'Accept': 'application/json' } });
                 if(!res.ok) throw new Error('HTTP ' + res.status);
                 const json = await res.json();
-                if(!json.data){ throw new Error('Sin sesión SGH (data:null). Abre el SGH en otra pestaña e inicia sesión, o usa 📂 Excel.'); }
+                if(!json.data){ throw new Error('sin_sesion'); }
                 SGH_DATA = json.data.map(sghMapRow);
                 localStorage.setItem('sgh_institucional', JSON.stringify(SGH_DATA.slice(0,2000)));
                 sghSetStatus(`✅ ${SGH_DATA.length} registros jalados del SGH (${fi} al ${ff}).`);
                 triggerToast(`SGH: ${SGH_DATA.length} registros`, 'success');
                 sghRender();
             } catch(err){
-                console.error(err);
-                sghSetStatus('❌ ' + err.message + ' En Vercel (HTTPS→HTTP) el navegador lo bloquea: usa 📂 Excel.', true);
-                triggerToast('SGH bloqueado, usa Excel', 'error');
+                console.error('SGH fetch:', err);
+                let msg;
+                if (err.message === 'sin_sesion'){
+                    msg = '🚪 El SGH respondió SIN SESIÓN (data:null): abre http://172.18.26.18/SGH/public/reporte en otra pestaña, INICIA SESIÓN y vuelve a jalar — o usa 📂 Excel.';
+                } else if (location.protocol === 'https:' || String(err.message).toLowerCase().includes('failed to fetch')){
+                    msg = '🔒 Conexión bloqueada: el navegador no permite llamar a un servidor HTTP desde una página HTTPS, o estás fuera de la red del hospital. Usa 📂 Excel en Vercel, o ejecuta este archivo dentro de la red 172.18.x.x.';
+                } else {
+                    msg = '❌ Error del SGH: ' + err.message;
+                }
+                sghSetStatus(msg, true);
+                triggerToast('SGH no disponible — usa 📂 Excel', 'error');
             }
         }
         function sghImportExcel(ev){
@@ -3353,7 +3369,7 @@
                 <td class="p-2 text-center whitespace-nowrap">${escHtml(String(r.paSist||''))}/${escHtml(String(r.paDiast||''))}</td>
                 <td class="p-2 text-center">${badge(r.riesgo)}</td>
                 <td class="p-2 text-center"><button onclick="sghPasar(${SGH_DATA.indexOf(r)})" class="bg-slate-800 hover:bg-slate-900 text-white px-2 py-1 rounded-lg text-[10px] font-bold">⬇ A mi cola</button></td>
-            </tr>`).join('') : '<tr><td colspan="9" class="p-6 text-center text-slate-400 font-bold">🔍 Sin resultados — ajusta filtros</td></tr>';
+            </tr>`).join('') : `<tr><td colspan="9" class="p-6 text-center font-bold ${SGH_DATA.length ? 'text-slate-400' : 'text-amber-600'}">${SGH_DATA.length ? '🔍 Sin resultados — ajusta fechas o búsqueda' : '📭 Sin datos cargados — usa 🔄 Jalar (red hospital con sesión) o 📂 Excel (triaje_2026.xlsx)'}</td></tr>`;
             document.getElementById('sghTotal').innerText = list.length;
             document.getElementById('sghP1').innerText = list.filter(r=>r.riesgo==='critico').length;
             document.getElementById('sghP2').innerText = list.filter(r=>r.riesgo==='alto').length;
