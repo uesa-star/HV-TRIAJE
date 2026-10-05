@@ -253,6 +253,21 @@
             
             <!-- ================= VISTA 1: DASHBOARD ================= -->
             <section id="view-dashboard" class="view-section max-w-7xl mx-auto space-y-6">
+                <!-- Filtro propio del módulo: fechas + buscador -->
+                <div class="bg-white rounded-3xl border border-slate-200 shadow-sm p-3 md:p-4">
+                    <div class="flex flex-wrap items-end gap-2">
+                        <div><label class="text-[10px] font-extrabold text-slate-400 uppercase block mb-1">📅 F. Inicial</label><input type="date" id="dashIni" class="filter-input px-3 py-2 bg-white rounded-xl text-xs font-semibold text-slate-700"></div>
+                        <div><label class="text-[10px] font-extrabold text-slate-400 uppercase block mb-1">📅 F. Final</label><input type="date" id="dashFin" class="filter-input px-3 py-2 bg-white rounded-xl text-xs font-semibold text-slate-700"></div>
+                        <div class="flex-1 min-w-[170px]"><label class="text-[10px] font-extrabold text-slate-400 uppercase block mb-1">🔍 Buscar</label><input type="text" id="dashText" onkeydown="if(event.key==='Enter')mfApply('dashboard')" placeholder="Apellidos, DNI, HC o motivo..." class="filter-input w-full px-3 py-2 bg-white rounded-xl text-xs font-semibold text-slate-700"></div>
+                        <button onclick="mfApply('dashboard')" class="bg-brand-700 hover:bg-brand-800 text-white font-extrabold px-4 py-2 rounded-xl text-xs uppercase shadow-md">🔍 Buscar</button>
+                        <div class="flex gap-1.5">
+                            <button onclick="mfQuick('dashboard',0)" class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-2 rounded-xl text-xs font-extrabold">📅 Hoy</button>
+                            <button onclick="mfQuick('dashboard',6)" class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-2 rounded-xl text-xs font-extrabold">7 días</button>
+                            <button onclick="mfReset('dashboard')" title="Limpiar filtro" class="bg-slate-200 hover:bg-slate-300 text-slate-700 px-3 py-2 rounded-xl text-xs font-extrabold">↺</button>
+                        </div>
+                    </div>
+                    <p id="dashInfo" class="text-[11px] font-bold text-slate-400 mt-2">Sin filtro: se muestran todos los registros.</p>
+                </div>
                 <!-- Tarjetas KPI -->
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                     <div class="bg-white p-5 rounded-3xl border border-slate-200 shadow-sm flex items-center justify-between">
@@ -386,10 +401,12 @@
                                 </select>
                             </div>
 
-                            <div class="lg:col-span-3 flex gap-2">
+                            <div class="lg:col-span-3 flex flex-wrap gap-2">
                                 <button onclick="executeFilter()" class="flex-1 bg-brand-700 hover:bg-brand-800 text-white font-extrabold px-3 py-2 rounded-xl text-xs shadow-md transition-all uppercase tracking-wider">
-                                    Buscar
+                                    🔍 Buscar
                                 </button>
+                                <button onclick="repQuick(0)" title="Solo hoy" class="bg-slate-200 hover:bg-slate-300 text-slate-700 px-3 py-2 rounded-xl text-xs font-extrabold transition-all">📅 Hoy</button>
+                                <button onclick="repQuick(6)" title="Últimos 7 días" class="bg-slate-200 hover:bg-slate-300 text-slate-700 px-3 py-2 rounded-xl text-xs font-extrabold transition-all">7 días</button>
                                 <button onclick="resetFilters()" title="Resetear" class="bg-slate-200 hover:bg-slate-300 text-slate-700 px-3 py-2 rounded-xl text-xs font-extrabold transition-all">
                                     ↺
                                 </button>
@@ -613,6 +630,21 @@
 
             <!-- ================= VISTA 4: COLA DE ESPERA EN TIEMPO REAL ================= -->
             <section id="view-cola" class="view-section max-w-7xl mx-auto space-y-6">
+                <!-- Filtro propio del módulo: fechas + buscador -->
+                <div class="bg-white rounded-3xl border border-slate-200 shadow-sm p-3 md:p-4">
+                    <div class="flex flex-wrap items-end gap-2">
+                        <div><label class="text-[10px] font-extrabold text-slate-400 uppercase block mb-1">📅 F. Inicial</label><input type="date" id="colaIni" class="filter-input px-3 py-2 bg-white rounded-xl text-xs font-semibold text-slate-700"></div>
+                        <div><label class="text-[10px] font-extrabold text-slate-400 uppercase block mb-1">📅 F. Final</label><input type="date" id="colaFin" class="filter-input px-3 py-2 bg-white rounded-xl text-xs font-semibold text-slate-700"></div>
+                        <div class="flex-1 min-w-[170px]"><label class="text-[10px] font-extrabold text-slate-400 uppercase block mb-1">🔍 Buscar</label><input type="text" id="colaText" onkeydown="if(event.key==='Enter')mfApply('cola')" placeholder="Apellidos, DNI, HC o motivo..." class="filter-input w-full px-3 py-2 bg-white rounded-xl text-xs font-semibold text-slate-700"></div>
+                        <button onclick="mfApply('cola')" class="bg-brand-700 hover:bg-brand-800 text-white font-extrabold px-4 py-2 rounded-xl text-xs uppercase shadow-md">🔍 Buscar</button>
+                        <div class="flex gap-1.5">
+                            <button onclick="mfQuick('cola',0)" class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-2 rounded-xl text-xs font-extrabold">📅 Hoy</button>
+                            <button onclick="mfQuick('cola',6)" class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-2 rounded-xl text-xs font-extrabold">7 días</button>
+                            <button onclick="mfReset('cola')" title="Limpiar filtro" class="bg-slate-200 hover:bg-slate-300 text-slate-700 px-3 py-2 rounded-xl text-xs font-extrabold">↺</button>
+                        </div>
+                    </div>
+                    <p id="colaInfo" class="text-[11px] font-bold text-slate-400 mt-2">Sin filtro: se muestran todos los registros.</p>
+                </div>
                 <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
                     <div class="bg-white p-5 rounded-3xl border border-slate-200 shadow-sm">
                         <p class="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">En Espera</p>
@@ -655,6 +687,21 @@
 
             <!-- ================= VISTA 5: ANALÍTICA OPERATIVA ================= -->
             <section id="view-estadisticas" class="view-section max-w-7xl mx-auto space-y-6">
+                <!-- Filtro propio del módulo: fechas + buscador -->
+                <div class="bg-white rounded-3xl border border-slate-200 shadow-sm p-3 md:p-4">
+                    <div class="flex flex-wrap items-end gap-2">
+                        <div><label class="text-[10px] font-extrabold text-slate-400 uppercase block mb-1">📅 F. Inicial</label><input type="date" id="anaIni" class="filter-input px-3 py-2 bg-white rounded-xl text-xs font-semibold text-slate-700"></div>
+                        <div><label class="text-[10px] font-extrabold text-slate-400 uppercase block mb-1">📅 F. Final</label><input type="date" id="anaFin" class="filter-input px-3 py-2 bg-white rounded-xl text-xs font-semibold text-slate-700"></div>
+                        <div class="flex-1 min-w-[170px]"><label class="text-[10px] font-extrabold text-slate-400 uppercase block mb-1">🔍 Buscar</label><input type="text" id="anaText" onkeydown="if(event.key==='Enter')mfApply('estadisticas')" placeholder="Apellidos, DNI, HC o motivo..." class="filter-input w-full px-3 py-2 bg-white rounded-xl text-xs font-semibold text-slate-700"></div>
+                        <button onclick="mfApply('estadisticas')" class="bg-brand-700 hover:bg-brand-800 text-white font-extrabold px-4 py-2 rounded-xl text-xs uppercase shadow-md">🔍 Buscar</button>
+                        <div class="flex gap-1.5">
+                            <button onclick="mfQuick('estadisticas',0)" class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-2 rounded-xl text-xs font-extrabold">📅 Hoy</button>
+                            <button onclick="mfQuick('estadisticas',6)" class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-2 rounded-xl text-xs font-extrabold">7 días</button>
+                            <button onclick="mfReset('estadisticas')" title="Limpiar filtro" class="bg-slate-200 hover:bg-slate-300 text-slate-700 px-3 py-2 rounded-xl text-xs font-extrabold">↺</button>
+                        </div>
+                    </div>
+                    <p id="anaInfo" class="text-[11px] font-bold text-slate-400 mt-2">Sin filtro: se muestran todos los registros.</p>
+                </div>
                 <!-- KPIs Analíticos -->
                 <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
                     <div class="bg-white p-5 rounded-3xl border border-slate-200 shadow-sm">
@@ -831,12 +878,12 @@
                 <div class="bg-white rounded-3xl border border-slate-200 shadow-sm p-4 md:p-5">
                     <div class="grid grid-cols-2 md:grid-cols-12 gap-2">
                         <div class="md:col-span-2">
-                            <label class="text-[10px] font-bold text-slate-500 uppercase block mb-1">F. Inicial</label>
-                            <input type="text" id="sghDateStart" placeholder="05/10/2026" class="filter-input w-full px-3 py-2 text-xs rounded-xl font-semibold">
+                            <label class="text-[10px] font-bold text-slate-500 uppercase block mb-1">📅 F. Inicial</label>
+                            <input type="date" id="sghDateStart" onchange="sghFiltrar()" class="filter-input w-full px-3 py-2 text-xs rounded-xl font-semibold">
                         </div>
                         <div class="md:col-span-2">
-                            <label class="text-[10px] font-bold text-slate-500 uppercase block mb-1">F. Final</label>
-                            <input type="text" id="sghDateEnd" placeholder="05/10/2026" class="filter-input w-full px-3 py-2 text-xs rounded-xl font-semibold">
+                            <label class="text-[10px] font-bold text-slate-500 uppercase block mb-1">📅 F. Final</label>
+                            <input type="date" id="sghDateEnd" onchange="sghFiltrar()" class="filter-input w-full px-3 py-2 text-xs rounded-xl font-semibold">
                         </div>
                         <div class="md:col-span-4">
                             <label class="text-[10px] font-bold text-slate-500 uppercase block mb-1">Paciente / DNI / HC</label>
@@ -847,6 +894,14 @@
                             <button onclick="document.getElementById('sghFile').click()" class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-2 rounded-xl text-xs font-extrabold uppercase">📂 Excel</button>
                             <input type="file" id="sghFile" accept=".xlsx,.xls,.csv" class="hidden" onchange="sghImportExcel(event)">
                         </div>
+                    </div>
+                    <div class="flex flex-wrap gap-2 mt-2">
+                        <span class="text-[10px] font-black text-slate-400 uppercase self-center">Rápido:</span>
+                        <button onclick="sghRango(0)" class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-1.5 rounded-lg text-[11px] font-extrabold">📅 Hoy</button>
+                        <button onclick="sghRango(6)" class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-1.5 rounded-lg text-[11px] font-extrabold">7 días</button>
+                        <button onclick="sghRango(29)" class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-1.5 rounded-lg text-[11px] font-extrabold">30 días</button>
+                        <button onclick="sghRango(-1, true)" class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-1.5 rounded-lg text-[11px] font-extrabold">🗓️ Mes actual</button>
+                        <button onclick="sghRango(null)" class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-1.5 rounded-lg text-[11px] font-extrabold">🧹 Limpiar</button>
                     </div>
                     <p id="sghStatus" class="text-[11px] font-bold text-slate-500 mt-2">Sin datos. Usa 🔄 Jalar (red hospital + login) o 📂 Excel (triaje_2026.xlsx, 32k filas).</p>
                 </div>
@@ -1662,7 +1717,8 @@
 
             filteredData = RAW_DATA.filter(item => {
                 let matchDate = true;
-                if (start && end) matchDate = item.fecha >= start && item.fecha <= end;
+                if (start) matchDate = item.fecha >= start;
+                if (end) matchDate = matchDate && item.fecha <= end;
                 
                 const matchText = item.paciente.toLowerCase().includes(text) || 
                                  item.dni.includes(text) || 
@@ -1677,7 +1733,89 @@
             currentPage = 1; // Reiniciar a la primera página al filtrar
             renderTable();
             updateStats();
+            mfReadInputs('reporte');
+            mfInfo('reporte', filteredData.length);
         }
+
+        // ============ FILTRO PROPIO POR MÓDULO (fechas + buscador) ============
+        const moduleFilters = {
+            dashboard: { start: '', end: '', text: '' },
+            cola: { start: '', end: '', text: '' },
+            estadisticas: { start: '', end: '', text: '' },
+            reporte: { start: '', end: '', text: '' }
+        };
+        const MF_PREFIX = { dashboard: 'dash', cola: 'cola', estadisticas: 'ana', reporte: 'rep' };
+        const MF_EL = {
+            dashboard: { ini: 'dashIni', fin: 'dashFin', text: 'dashText' },
+            cola: { ini: 'colaIni', fin: 'colaFin', text: 'colaText' },
+            estadisticas: { ini: 'anaIni', fin: 'anaFin', text: 'anaText' },
+            reporte: { ini: 'dateStart', fin: 'dateEnd', text: 'textSearch' }
+        };
+
+        function mfState(v) {
+            if (!moduleFilters[v]) moduleFilters[v] = { start: '', end: '', text: '' };
+            return moduleFilters[v];
+        }
+        function mfReadInputs(v) {
+            const st = mfState(v);
+            const ids = MF_EL[v];
+            if (ids) {
+                const g = id => { const el = document.getElementById(id); return el ? el.value : ''; };
+                st.start = g(ids.ini);
+                st.end = g(ids.fin);
+                st.text = (g(ids.text) || '').trim().toLowerCase();
+            }
+            return st;
+        }
+        function mfData(v) {
+            const st = mfState(v);
+            if (!st.start && !st.end && !st.text) return RAW_DATA;
+            return RAW_DATA.filter(r => {
+                if (st.start && r.fecha < st.start) return false;
+                if (st.end && r.fecha > st.end) return false;
+                if (st.text) {
+                    const blob = `${r.paciente || ''} ${r.dni || ''} ${r.hc || ''} ${r.motivo || ''}`.toLowerCase();
+                    if (!blob.includes(st.text)) return false;
+                }
+                return true;
+            });
+        }
+        function mfInfo(v, n) {
+            const st = mfState(v);
+            const p = MF_PREFIX[v] || v;
+            const el = document.getElementById(p + 'Info');
+            if (!el) return;
+            const activo = st.start || st.end || st.text;
+            el.innerText = activo
+                ? `🔍 Filtro activo${st.start ? ' desde ' + st.start : ''}${st.end ? ' hasta ' + st.end : ''}${st.text ? ' · texto "' + st.text + '"' : ''} → ${n} registro(s) de ${RAW_DATA.length}.`
+                : 'Sin filtro: se muestran todos los registros.';
+            el.className = 'text-[11px] font-bold mt-2 ' + (activo ? 'text-brand-700' : 'text-slate-400');
+        }
+        function mfApply(v) {
+            mfReadInputs(v);
+            if (v === 'cola') renderQueue();
+            else if (v === 'dashboard') { initCharts(); updateStats(); refreshFlowChartData(); }
+            else if (v === 'estadisticas') refreshAnalytics();
+            else if (v === 'reporte') { executeFilter(); return; }
+            mfInfo(v, mfData(v).length);
+        }
+        function mfQuick(v, dias) {
+            const ids = MF_EL[v] || {};
+            const ini = document.getElementById(ids.ini);
+            const fin = document.getElementById(ids.fin);
+            const hoy = new Date();
+            const iso = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+            if (ini) { const d = new Date(hoy); d.setDate(d.getDate() - dias); ini.value = iso(d); }
+            if (fin) fin.value = iso(hoy);
+            mfApply(v);
+        }
+        function mfReset(v) {
+            const ids = MF_EL[v] || {};
+            [ids.ini, ids.fin, ids.text].forEach(id => { if (id) { const el = document.getElementById(id); if (el) el.value = ''; } });
+            mfApply(v);
+            triggerToast('Filtro de fechas restablecido', 'info');
+        }
+        function repQuick(dias) { mfQuick('reporte', dias); }
 
         function resetFilters() {
             document.getElementById('dateStart').value = '';
@@ -1944,15 +2082,16 @@
 
         function updateStats() {
             const hoy = todayStr();
+            const dash = mfData('dashboard');
 
             const elTotal = document.getElementById('statTotal');
-            if (elTotal) elTotal.innerText = RAW_DATA.length;
+            if (elTotal) elTotal.innerText = dash.length;
 
             const elP1 = document.getElementById('statP1');
-            if (elP1) elP1.innerText = RAW_DATA.filter(r => r.riesgo === 'critico').length;
+            if (elP1) elP1.innerText = dash.filter(r => r.riesgo === 'critico').length;
 
             const elP2 = document.getElementById('statP2');
-            if (elP2) elP2.innerText = RAW_DATA.filter(r => r.riesgo === 'alto').length;
+            if (elP2) elP2.innerText = dash.filter(r => r.riesgo === 'alto').length;
 
             const elCritical = document.getElementById('statCritical');
             if (elCritical) {
@@ -1965,17 +2104,21 @@
                 const avg = todayRecords.reduce((acc, r) => acc + patientWaitMinutes(r), 0) / todayRecords.length;
                 const elWait = document.getElementById('statWait');
                 if (elWait) elWait.innerText = `${Math.round(avg)} min`;
+            } else {
+                const elWait = document.getElementById('statWait');
+                if (elWait) elWait.innerText = '-- min';
             }
 
             if (priorityChartInstance && priorityChartInstance.data && priorityChartInstance.data.datasets[0]) {
-                const countStables = RAW_DATA.filter(r => r.riesgo === 'estable').length;
-                const countMod = RAW_DATA.filter(r => r.riesgo === 'moderado').length;
-                const countHigh = RAW_DATA.filter(r => r.riesgo === 'alto').length;
-                const countCrit = RAW_DATA.filter(r => r.riesgo === 'critico').length;
+                const countStables = dash.filter(r => r.riesgo === 'estable').length;
+                const countMod = dash.filter(r => r.riesgo === 'moderado').length;
+                const countHigh = dash.filter(r => r.riesgo === 'alto').length;
+                const countCrit = dash.filter(r => r.riesgo === 'critico').length;
 
                 priorityChartInstance.data.datasets[0].data = [countStables, countMod, countHigh, countCrit];
                 priorityChartInstance.update();
             }
+            mfInfo('dashboard', dash.length);
         }
 
         function openNewTriageModal() {
@@ -2462,7 +2605,7 @@
         function refreshFlowChartData() {
             if (!flowChartInstance) return;
             const buckets = new Array(24).fill(0);
-            RAW_DATA.forEach(r => {
+            mfData('dashboard').forEach(r => {
                 const h = parseInt((r.hora || '00').slice(0, 2), 10);
                 buckets[h] = (buckets[h] || 0) + 1;
             });
@@ -2617,11 +2760,12 @@
             if (!waitingEl || !activeEl || !doneEl) return;
 
             const now = Date.now();
-            const waiting = RAW_DATA.filter(r => r.estado === 'en_espera')
+            const base = mfData('cola');
+            const waiting = base.filter(r => r.estado === 'en_espera')
                 .sort((a, b) => priorityOrder(a) - priorityOrder(b) || admissionTime(a) - admissionTime(b));
-            const active = RAW_DATA.filter(r => r.estado === 'en_atencion')
+            const active = base.filter(r => r.estado === 'en_atencion')
                 .sort((a, b) => admissionTime(a) - admissionTime(b));
-            const done = RAW_DATA.filter(r => r.estado === 'atendido' || r.estado === 'retirado')
+            const done = base.filter(r => r.estado === 'atendido' || r.estado === 'retirado')
                 .sort((a, b) => b.fecha.localeCompare(a.fecha) || b.hora.localeCompare(a.hora));
 
             waitingEl.innerHTML = waiting.length
@@ -2640,6 +2784,7 @@
             setNum('queueDone', done.length);
             const maxWaitMs = waiting.length ? Math.max(...waiting.map(r => now - admissionTime(r))) : 0;
             setNum('queueMax', formatDuration(maxWaitMs));
+            mfInfo('cola', base.length);
 
             updateStats();
         }
@@ -3017,36 +3162,38 @@
         function refreshAnalytics() {
             if (typeof Chart === 'undefined') return;
             ensureAnalyticsCharts();
+            const base = mfData('estadisticas');
 
             const hoy = todayStr();
-            const todayCount = RAW_DATA.filter(r => r.fecha === hoy).length;
-            const todayRecs = RAW_DATA.filter(r => r.fecha === hoy);
+            const todayCount = base.filter(r => r.fecha === hoy).length;
+            const todayRecs = base.filter(r => r.fecha === hoy);
             const avgWait = todayRecs.length
                 ? Math.round(todayRecs.reduce((acc, r) => acc + patientWaitMinutes(r), 0) / todayRecs.length)
                 : 0;
             const setNum = (id, val) => { const el = document.getElementById(id); if (el) el.innerText = val; };
             setNum('statHoy', todayCount);
-            setNum('statEsperaAna', RAW_DATA.filter(r => r.estado === 'en_espera').length);
-            setNum('statAtendiAna', RAW_DATA.filter(r => r.estado === 'atendido').length);
+            setNum('statEsperaAna', base.filter(r => r.estado === 'en_espera').length);
+            setNum('statAtendiAna', base.filter(r => r.estado === 'atendido').length);
             setNum('statEsperaPromAna', `${avgWait} min`);
+            mfInfo('estadisticas', base.length);
 
             const hourB = new Array(24).fill(0);
-            RAW_DATA.forEach(r => { hourB[parseInt((r.hora || '00').slice(0, 2), 10)]++; });
+            base.forEach(r => { hourB[parseInt((r.hora || '00').slice(0, 2), 10)]++; });
             const hourLabels = hourB.map((_, i) => `${String(i).padStart(2, '0')}:00`);
             setChartData(analyticsCharts.hour, { labels: hourLabels, values: hourB, label: 'Pacientes', colors: chartPalette(hourB), type: 'bar' });
 
             const prioLabels = ['P-IV Estable', 'P-III Moderado', 'P-II Urgencia', 'P-I Crítico'];
-            const prioCounts = ['estable', 'moderado', 'alto', 'critico'].map(p => RAW_DATA.filter(r => r.riesgo === p).length);
+            const prioCounts = ['estable', 'moderado', 'alto', 'critico'].map(p => base.filter(r => r.riesgo === p).length);
             setChartData(analyticsCharts.priority, { labels: prioLabels, values: prioCounts, colors: ['#10b981', '#eab308', '#f97316', '#ef4444'], type: 'doughnut' });
 
-            const spec = countBy(RAW_DATA, r => r.especialidad || 'Sin especificar');
+            const spec = countBy(base, r => r.especialidad || 'Sin especificar');
             setChartData(analyticsCharts.specialty, { labels: spec.labels, values: spec.values, colors: chartPalette(spec.values), type: 'bar' });
 
-            const area = countBy(RAW_DATA, r => r.areaDestino || 'Pendiente');
+            const area = countBy(base, r => r.areaDestino || 'Pendiente');
             setChartData(analyticsCharts.area, { labels: area.labels, values: area.values, colors: chartPalette(area.values), type: 'doughnut' });
 
-            const dayLabels = countBy(RAW_DATA, r => r.fecha).labels.sort((a, b) => a.localeCompare(b));
-            const dayValues = dayLabels.map(d => RAW_DATA.filter(r => r.fecha === d).length);
+            const dayLabels = countBy(base, r => r.fecha).labels.sort((a, b) => a.localeCompare(b));
+            const dayValues = dayLabels.map(d => base.filter(r => r.fecha === d).length);
             setChartData(analyticsCharts.day, { labels: dayLabels.map(formatDate), values: dayValues, label: 'Pacientes', colors: ['#2563eb'], type: 'line' });
         }
 
@@ -3059,17 +3206,33 @@
             const el = document.getElementById('sghStatus');
             if (el) { el.innerText = msg; el.className = 'text-[11px] font-bold mt-2 ' + (isErr ? 'text-red-600' : 'text-slate-500'); }
         }
-        function sghToYMD(dmy){
-            if(!dmy) return '';
-            const m = dmy.match(/^(\d{2})\/(\d{2})\/(\d{4})/);
-            return m ? `${m[3]}${m[2]}${m[1]}` : dmy;
+        function sghToYMD(val){
+            if(!val) return '';
+            if(/^\d{4}-\d{2}-\d{2}$/.test(val)) return val.replace(/-/g,'');
+            const m = val.match(/^(\d{2})\/(\d{2})\/(\d{4})/);
+            return m ? `${m[3]}${m[2]}${m[1]}` : val;
+        }
+        function sghISO(d){
+            return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
         }
         function sghInitFechas(){
-            const hoy = new Date();
-            const dmy = `${String(hoy.getDate()).padStart(2,'0')}/${String(hoy.getMonth()+1).padStart(2,'0')}/${hoy.getFullYear()}`;
             const a = document.getElementById('sghDateStart'), b = document.getElementById('sghDateEnd');
-            if (a && !a.value) a.value = dmy;
-            if (b && !b.value) b.value = dmy;
+            if (a && !a.value) a.value = sghISO(new Date());
+            if (b && !b.value) b.value = sghISO(new Date());
+            if (SGH_DATA.length) sghRender();
+        }
+        function sghRango(dias, esMes){
+            const a = document.getElementById('sghDateStart'), b = document.getElementById('sghDateEnd');
+            if (dias === null){ if(a) a.value=''; if(b) b.value=''; sghSetStatus('Calendario limpio. Elige fechas o usa 📂 Excel.'); return; }
+            const hoy = new Date();
+            if (esMes){
+                a.value = sghISO(new Date(hoy.getFullYear(), hoy.getMonth(), 1));
+                b.value = sghISO(new Date(hoy.getFullYear(), hoy.getMonth()+1, 0));
+            } else {
+                const ini = new Date(hoy); ini.setDate(ini.getDate() - dias);
+                a.value = sghISO(ini);
+                b.value = sghISO(hoy);
+            }
             if (SGH_DATA.length) sghRender();
         }
         function sghParsePA(paStr){
@@ -3147,7 +3310,9 @@
                         Motivo: r.Motivo, Topico: r.Topico, Medico: r.Medico
                     }));
                     localStorage.setItem('sgh_institucional', JSON.stringify(SGH_DATA.slice(0,2000)));
-                    sghSetStatus(`✅ ${SGH_DATA.length} filas cargadas de ${f.name}.`);
+                    const a = document.getElementById('sghDateStart'), b = document.getElementById('sghDateEnd');
+                    if (a) a.value = ''; if (b) b.value = '';
+                    sghSetStatus(`✅ ${SGH_DATA.length} filas cargadas de ${f.name}. (Calendario en vacío = todas; ajústalo para filtrar)`);
                     triggerToast(`Excel: ${SGH_DATA.length} filas`, 'success');
                     sghRender();
                 } catch(err){ sghSetStatus('❌ Excel: ' + err.message, true); }
@@ -3156,9 +3321,25 @@
             ev.target.value = '';
         }
         function sghFiltrar(){ sghRender(); }
+        function sghFechaISO(f){
+            if(!f) return '';
+            f = String(f).trim();
+            let m = f.match(/^(\d{4})-(\d{2})-(\d{2})/); if(m) return f.slice(0,10);
+            m = f.match(/^(\d{2})\/(\d{2})\/(\d{4})/); if(m) return `${m[3]}-${m[2]}-${m[1]}`;
+            m = f.match(/^(\d{8})/); if(m) return `${m[1].slice(0,4)}-${m[1].slice(4,6)}-${m[1].slice(6,8)}`;
+            return '';
+        }
         function sghRender(){
             const q = (document.getElementById('sghSearch').value || '').toUpperCase();
-            const list = SGH_DATA.filter(r => !q || `${r.paciente} ${r.dni} ${r.hc}`.toUpperCase().includes(q)).slice(0,200);
+            const ini = document.getElementById('sghDateStart').value || '';
+            const fin = document.getElementById('sghDateEnd').value || '';
+            const list = SGH_DATA.filter(r => {
+                if (q && !`${r.paciente} ${r.dni} ${r.hc}`.toUpperCase().includes(q)) return false;
+                const f = sghFechaISO(r.fecha);
+                if (ini && f && f < ini) return false;
+                if (fin && f && f > fin) return false;
+                return true;
+            }).slice(0,200);
             const tb = document.getElementById('sghTableBody');
             const badge = (riesgo) => riesgo==='critico' ? '<span class="bg-red-600 text-white px-2 py-0.5 rounded-lg font-bold">P-I CRÍTICO</span>'
                 : riesgo==='alto' ? '<span class="bg-orange-500 text-white px-2 py-0.5 rounded-lg font-bold">P-II URGENTE</span>'
@@ -3173,11 +3354,11 @@
                 <td class="p-2 text-center">${badge(r.riesgo)}</td>
                 <td class="p-2 text-center"><button onclick="sghPasar(${SGH_DATA.indexOf(r)})" class="bg-slate-800 hover:bg-slate-900 text-white px-2 py-1 rounded-lg text-[10px] font-bold">⬇ A mi cola</button></td>
             </tr>`).join('') : '<tr><td colspan="9" class="p-6 text-center text-slate-400 font-bold">🔍 Sin resultados — ajusta filtros</td></tr>';
-            document.getElementById('sghTotal').innerText = SGH_DATA.length;
-            document.getElementById('sghP1').innerText = SGH_DATA.filter(r=>r.riesgo==='critico').length;
-            document.getElementById('sghP2').innerText = SGH_DATA.filter(r=>r.riesgo==='alto').length;
-            const top = countBy(SGH_DATA, r=>r.especialidad||'—');
-            document.getElementById('sghTop').innerText = top.labels.length ? top.labels[top.values.indexOf(Math.max(...top.values))] : '—';
+            document.getElementById('sghTotal').innerText = list.length;
+            document.getElementById('sghP1').innerText = list.filter(r=>r.riesgo==='critico').length;
+            document.getElementById('sghP2').innerText = list.filter(r=>r.riesgo==='alto').length;
+            const top = countBy(list, r=>r.especialidad||'—');
+            document.getElementById('sghTop').innerText = top.labels.length && top.labels[0]!=='—' ? top.labels[top.values.indexOf(Math.max(...top.values))] : '—';
         }
         function sghPasar(idx){
             const r = SGH_DATA[idx];
